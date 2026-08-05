@@ -2,7 +2,7 @@ import { login } from "./actions";
 
 export default async function LoginPage(props: PageProps<"/login">) {
   const searchParams = await props.searchParams;
-  const from = typeof searchParams.from === "string" ? searchParams.from : "/tasks";
+  const from = typeof searchParams.from === "string" ? searchParams.from : "/dashboard";
   const hasError = searchParams.error === "1";
 
   return (

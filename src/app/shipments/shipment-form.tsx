@@ -1,11 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { createTask } from "./actions";
-import { domainLabels, priorityLabels } from "@/lib/task-labels";
+import { createShipment } from "./actions";
 import { DatePicker } from "@/components/date-picker";
 
-export function TaskForm() {
+export function ShipmentForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -14,9 +13,9 @@ export function TaskForm() {
   return (
     <>
       <div className="section-head">
-        <h2>Tasks</h2>
+        <h2>Shipments</h2>
         <button type="button" className="btn" onClick={() => setOpen((o) => !o)}>
-          {open ? "Cancel" : "+ add task"}
+          {open ? "Cancel" : "+ add shipment"}
         </button>
       </div>
 
@@ -27,7 +26,7 @@ export function TaskForm() {
           className="form-panel open"
           action={(formData: FormData) => {
             startTransition(async () => {
-              await createTask(formData);
+              await createShipment(formData);
               setResetKey((k) => k + 1);
               setOpen(false);
             });
@@ -35,36 +34,38 @@ export function TaskForm() {
         >
           <div className="form-grid">
             <div className="field">
-              <label>Title</label>
-              <input name="title" required placeholder="Confirm quote with manufacturer" />
+              <label>Name</label>
+              <input name="name" required placeholder="Switch-Back Pants — Run 3" />
             </div>
             <div className="field">
-              <label>Domain</label>
-              <select name="domain" defaultValue="General">
-                {Object.entries(domainLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <label>Tracking number</label>
+              <input name="tracking" placeholder="Last-leg carrier tracking #" />
             </div>
             <div className="field">
-              <label>Priority</label>
-              <select name="priority" defaultValue="Medium">
-                {Object.entries(priorityLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <label>ETA</label>
+              <DatePicker name="eta" />
             </div>
-            <div className="field">
-              <label>Due date</label>
-              <DatePicker name="dueDate" />
+            <div className="field" style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+              <label style={{ margin: "0 8px 0 0", display: "inline" }}>
+                <input
+                  type="checkbox"
+                  name="flagged"
+                  style={{ width: "auto", verticalAlign: "middle" }}
+                />{" "}
+                Flag for attention
+              </label>
             </div>
           </div>
+          <div className="field">
+            <label>Notes</label>
+            <textarea
+              name="notes"
+              rows={2}
+              placeholder="Freight method, manufacturer, incoterm, or anything else worth remembering"
+            />
+          </div>
           <button type="submit" className="btn" disabled={pending}>
-            {pending ? "Saving…" : "Save task"}
+            {pending ? "Saving…" : "Save shipment"}
           </button>{" "}
           <button type="button" className="btn ghost" onClick={() => setOpen(false)}>
             Cancel

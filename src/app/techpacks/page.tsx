@@ -1,18 +1,18 @@
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
-import { TaskForm } from "./task-form";
-import { TaskListLoader } from "./task-list-loader";
+import { TechpackForm } from "./techpack-form";
+import { TechpackList } from "./techpack-list";
 
 export const dynamic = "force-dynamic";
 
-export default function TasksPage() {
+export default function TechpacksPage() {
   return (
     <div className="basecamp" style={{ minHeight: "100vh" }}>
       <AppNav />
       <main className="wrap content-fade" style={{ paddingTop: 0 }}>
-        <TaskForm />
+        <TechpackForm />
         <Suspense fallback={<div className="empty">Loading…</div>}>
-          <TaskListLoader />
+          <TechpackList />
         </Suspense>
       </main>
     </div>

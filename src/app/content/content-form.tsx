@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { createTask } from "./actions";
-import { domainLabels, priorityLabels } from "@/lib/task-labels";
+import { createPost } from "./actions";
+import { platformLabels, typeLabels, statusLabels } from "@/lib/content-labels";
 import { DatePicker } from "@/components/date-picker";
 
-export function TaskForm() {
+export function ContentForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -14,9 +14,9 @@ export function TaskForm() {
   return (
     <>
       <div className="section-head">
-        <h2>Tasks</h2>
+        <h2>Content calendar</h2>
         <button type="button" className="btn" onClick={() => setOpen((o) => !o)}>
-          {open ? "Cancel" : "+ add task"}
+          {open ? "Cancel" : "+ add post"}
         </button>
       </div>
 
@@ -27,7 +27,7 @@ export function TaskForm() {
           className="form-panel open"
           action={(formData: FormData) => {
             startTransition(async () => {
-              await createTask(formData);
+              await createPost(formData);
               setResetKey((k) => k + 1);
               setOpen(false);
             });
@@ -35,13 +35,9 @@ export function TaskForm() {
         >
           <div className="form-grid">
             <div className="field">
-              <label>Title</label>
-              <input name="title" required placeholder="Confirm quote with manufacturer" />
-            </div>
-            <div className="field">
-              <label>Domain</label>
-              <select name="domain" defaultValue="General">
-                {Object.entries(domainLabels).map(([value, label]) => (
+              <label>Platform</label>
+              <select name="platform" defaultValue="Instagram">
+                {Object.entries(platformLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
@@ -49,9 +45,9 @@ export function TaskForm() {
               </select>
             </div>
             <div className="field">
-              <label>Priority</label>
-              <select name="priority" defaultValue="Medium">
-                {Object.entries(priorityLabels).map(([value, label]) => (
+              <label>Type</label>
+              <select name="type" defaultValue="Reel">
+                {Object.entries(typeLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
@@ -59,12 +55,34 @@ export function TaskForm() {
               </select>
             </div>
             <div className="field">
-              <label>Due date</label>
-              <DatePicker name="dueDate" />
+              <label>Planned date</label>
+              <DatePicker name="date" />
+            </div>
+            <div className="field">
+              <label>Status</label>
+              <select name="status" defaultValue="Idea">
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label>Linked product</label>
+              <input name="product" placeholder="Trailhead hat" />
+            </div>
+            <div className="field">
+              <label>UGC partner</label>
+              <input name="partner" placeholder="Creator handle, optional" />
             </div>
           </div>
+          <div className="field">
+            <label>Idea / caption</label>
+            <textarea name="notes" rows={2} placeholder="Hook, caption draft, or shot list" />
+          </div>
           <button type="submit" className="btn" disabled={pending}>
-            {pending ? "Saving…" : "Save task"}
+            {pending ? "Saving…" : "Save post"}
           </button>{" "}
           <button type="button" className="btn ghost" onClick={() => setOpen(false)}>
             Cancel

@@ -12,10 +12,12 @@ export function StatusSelect({ id, status }: { id: string; status: TaskStatus })
     <form ref={formRef} action={updateTaskStatus}>
       <input type="hidden" name="id" value={id} />
       <select
+        key={status}
+        className="status-select"
         name="status"
         defaultValue={status}
         onChange={() => formRef.current?.requestSubmit()}
-        className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+        style={{ width: "120px" }}
       >
         {Object.entries(statusLabels).map(([value, label]) => (
           <option key={value} value={value}>

@@ -1,11 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { createTask } from "./actions";
-import { domainLabels, priorityLabels } from "@/lib/task-labels";
-import { DatePicker } from "@/components/date-picker";
+import { createCase } from "./actions";
+import { issueLabels, resolutionLabels, statusLabels } from "@/lib/case-labels";
 
-export function TaskForm() {
+export function CaseForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
@@ -14,9 +13,9 @@ export function TaskForm() {
   return (
     <>
       <div className="section-head">
-        <h2>Tasks</h2>
+        <h2>Customer cases</h2>
         <button type="button" className="btn" onClick={() => setOpen((o) => !o)}>
-          {open ? "Cancel" : "+ add task"}
+          {open ? "Cancel" : "+ add case"}
         </button>
       </div>
 
@@ -27,7 +26,7 @@ export function TaskForm() {
           className="form-panel open"
           action={(formData: FormData) => {
             startTransition(async () => {
-              await createTask(formData);
+              await createCase(formData);
               setResetKey((k) => k + 1);
               setOpen(false);
             });
@@ -35,13 +34,13 @@ export function TaskForm() {
         >
           <div className="form-grid">
             <div className="field">
-              <label>Title</label>
-              <input name="title" required placeholder="Confirm quote with manufacturer" />
+              <label>Customer name</label>
+              <input name="customer" required placeholder="Customer name" />
             </div>
             <div className="field">
-              <label>Domain</label>
-              <select name="domain" defaultValue="General">
-                {Object.entries(domainLabels).map(([value, label]) => (
+              <label>Issue type</label>
+              <select name="issue" defaultValue="DelayedShipment">
+                {Object.entries(issueLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
@@ -49,9 +48,9 @@ export function TaskForm() {
               </select>
             </div>
             <div className="field">
-              <label>Priority</label>
-              <select name="priority" defaultValue="Medium">
-                {Object.entries(priorityLabels).map(([value, label]) => (
+              <label>Resolution</label>
+              <select name="resolution" defaultValue="Pending">
+                {Object.entries(resolutionLabels).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>
@@ -59,12 +58,22 @@ export function TaskForm() {
               </select>
             </div>
             <div className="field">
-              <label>Due date</label>
-              <DatePicker name="dueDate" />
+              <label>Status</label>
+              <select name="status" defaultValue="Open">
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+          <div className="field">
+            <label>Notes</label>
+            <textarea name="notes" rows={2} />
+          </div>
           <button type="submit" className="btn" disabled={pending}>
-            {pending ? "Saving…" : "Save task"}
+            {pending ? "Saving…" : "Save case"}
           </button>{" "}
           <button type="button" className="btn ghost" onClick={() => setOpen(false)}>
             Cancel

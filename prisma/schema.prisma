@@ -15,6 +15,12 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Scratchpad {
+  id        String   @id @default(cuid())
+  content   String
+  updatedAt DateTime @updatedAt
+}
+
 enum Domain {
   Sourcing
   Logistics
@@ -48,4 +54,183 @@ model Task {
   dueDate     DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+}
+
+model Shipment {
+  id        String    @id @default(cuid())
+  name      String
+  tracking  String?
+  eta       DateTime?
+  notes     String?
+  flagged   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum StageStatus {
+  Pending
+  Current
+  Done
+}
+
+model Timeline {
+  id        String          @id @default(cuid())
+  name      String
+  notes     String?
+  flagged   Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  stages    TimelineStage[]
+}
+
+model TimelineStage {
+  id          String       @id @default(cuid())
+  timelineId  String
+  timeline    Timeline     @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+  name        String
+  order       Int
+  status      StageStatus  @default(Pending)
+  notes       String?
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([timelineId, name])
+}
+
+model Attachment {
+  id              String        @id @default(cuid())
+  timelineStageId String
+  timelineStage   TimelineStage @relation(fields: [timelineStageId], references: [id], onDelete: Cascade)
+  filename        String
+  blobUrl         String
+  mimeType        String?
+  size            Int?
+  createdAt       DateTime      @default(now())
+}
+
+enum TechpackCategory {
+  Pants
+  Beanie
+  Thermal
+  Midlayer
+  Hat
+  Other
+}
+
+enum TechpackStatus {
+  Draft
+  Active
+  UnderRevision
+  Discontinued
+}
+
+model Techpack {
+  id        String           @id @default(cuid())
+  name      String
+  category  TechpackCategory
+  version   String
+  status    TechpackStatus   @default(Draft)
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  images    TechpackImage[]
+}
+
+model TechpackImage {
+  id         String   @id @default(cuid())
+  techpackId String
+  techpack   Techpack @relation(fields: [techpackId], references: [id], onDelete: Cascade)
+  filename   String
+  blobUrl    String
+  mimeType   String?
+  size       Int?
+  createdAt  DateTime @default(now())
+}
+
+enum CaseIssue {
+  DelayedShipment
+  ProductDefect
+  RefundRequest
+  Other
+}
+
+enum CaseResolution {
+  Pending
+  FreeItem
+  DiscountCode
+  Refund
+  Replacement
+}
+
+enum CaseStatus {
+  Open
+  Resolved
+  Escalated
+}
+
+model Case {
+  id         String         @id @default(cuid())
+  customer   String
+  issue      CaseIssue
+  resolution CaseResolution @default(Pending)
+  status     CaseStatus     @default(Open)
+  notes      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+enum Platform {
+  Instagram
+  TikTok
+  Both
+}
+
+enum PostType {
+  Reel
+  StaticPost
+  Story
+  UGCRepost
+}
+
+enum PostStatus {
+  Idea
+  Scripted
+  Filmed
+  Edited
+  Scheduled
+  Posted
+}
+
+model Post {
+  id            String     @id @default(cuid())
+  platform      Platform
+  type          PostType
+  date          DateTime
+  status        PostStatus @default(Idea)
+  product       String?
+  partner       String?
+  notes         String?
+  imageUrl      String?
+  imageFilename String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+enum FinanceType {
+  CreditCard
+  TaxFiling
+  ChargebackRefund
+  Other
+}
+
+model FinanceItem {
+  id        String      @id @default(cuid())
+  type      FinanceType
+  name      String
+  date      DateTime?
+  amount    Float?
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }

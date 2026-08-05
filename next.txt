@@ -1,0 +1,5 @@
+sketch/note pad somewhere, for finance red / green
+fix file storage, task list not started functioanlity
+fading effect only to under menu header
+links functioanlity for desciptions
+notes get partially displayed

@@ -1,18 +1,18 @@
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
-import { TaskForm } from "./task-form";
-import { TaskListLoader } from "./task-list-loader";
+import { ShipmentForm } from "./shipment-form";
+import { ShipmentList } from "./shipment-list";
 
 export const dynamic = "force-dynamic";
 
-export default function TasksPage() {
+export default function ShipmentsPage() {
   return (
     <div className="basecamp" style={{ minHeight: "100vh" }}>
       <AppNav />
       <main className="wrap content-fade" style={{ paddingTop: 0 }}>
-        <TaskForm />
+        <ShipmentForm />
         <Suspense fallback={<div className="empty">Loading…</div>}>
-          <TaskListLoader />
+          <ShipmentList />
         </Suspense>
       </main>
     </div>

@@ -24,6 +24,7 @@ export async function createTask(formData: FormData) {
   });
 
   revalidatePath("/tasks");
+  revalidatePath("/dashboard");
 }
 
 export async function updateTaskStatus(formData: FormData) {
@@ -33,6 +34,17 @@ export async function updateTaskStatus(formData: FormData) {
 
   await prisma.task.update({ where: { id }, data: { status } });
   revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}
+
+export async function updateTaskDescription(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const description = String(formData.get("description") ?? "").trim();
+
+  await prisma.task.update({ where: { id }, data: { description: description || null } });
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
 }
 
 export async function deleteTask(formData: FormData) {
@@ -41,4 +53,5 @@ export async function deleteTask(formData: FormData) {
 
   await prisma.task.delete({ where: { id } });
   revalidatePath("/tasks");
+  revalidatePath("/dashboard");
 }

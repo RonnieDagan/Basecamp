@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Basecamp — Wandern Co.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2620; --ink-2:#243329; --paper:#FBF9F3;
+    --moss:#3F5D45; --moss-light:#7FA084;
+    --clay:#A85C34; --clay-light:#D89A6E; --amber-light:#E6C784;
+    --line:rgba(251,249,243,0.12); --line-strong:rgba(251,249,243,0.22);
+    --text-dim:rgba(251,249,243,0.55); --text-dimmer:rgba(251,249,243,0.35);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ink);color:var(--paper);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0;letter-spacing:0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;border-bottom:1px solid var(--line-strong);padding-bottom:20px;}
+  .brand h1{font-size:26px;font-weight:700;}
+  .brand p{margin:4px 0 0;font-size:13px;color:var(--text-dim);}
+  .clock{text-align:right;font-size:12px;color:var(--text-dimmer);}
+  .clock .mono{color:var(--text-dim);font-size:13px;}
+  nav{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+  nav button{background:transparent;border:1px solid var(--line);color:var(--text-dim);font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:8px 14px;border-radius:6px;cursor:grab;transition:all .15s;}
+  nav button:hover{border-color:var(--line-strong);color:var(--paper);}
+  nav button.active{background:var(--moss);border-color:var(--moss);color:var(--paper);}
+  nav button.drag-over{border-color:var(--clay-light);}
+  .nav-hint{font-size:11px;color:var(--text-dimmer);margin-bottom:22px;}
+  section{display:none;}
+  section.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .stat{background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:16px;}
+  .stat .n{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;margin-top:6px;}
+  .stat .l{font-size:12px;color:var(--text-dim);}
+  .card{background:var(--ink-2);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:14px;}
+  .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .section-head h2{font-size:17px;}
+  .btn{background:var(--moss);color:var(--paper);border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;padding:8px 14px;cursor:pointer;}
+  .btn:hover{background:var(--moss-light);}
+  .btn.ghost{background:transparent;border:1px solid var(--line-strong);color:var(--paper);}
+  .btn.ghost:hover{border-color:var(--paper);}
+  .btn.small{padding:4px 9px;font-size:11px;}
+  input,select,textarea{background:var(--ink);border:1px solid var(--line-strong);color:var(--paper);border-radius:6px;padding:8px 10px;font-family:'Inter',sans-serif;font-size:13px;width:100%;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--moss-light);}
+  label{font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em;}
+  .field{margin-bottom:10px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .form-panel{background:var(--ink);border:1px dashed var(--line-strong);border-radius:10px;padding:16px;margin-bottom:16px;display:none;}
+  .form-panel.open{display:block;}
+  .row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .row:last-child{border-bottom:none;}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .tag{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500;white-space:nowrap;}
+  .tag-moss{background:rgba(127,160,132,0.18);color:var(--moss-light);}
+  .tag-clay{background:rgba(216,154,110,0.18);color:var(--clay-light);}
+  .tag-amber{background:rgba(230,199,132,0.18);color:var(--amber-light);}
+  .tag-dim{background:rgba(251,249,243,0.08);color:var(--text-dim);}
+  .empty{color:var(--text-dimmer);font-size:13px;padding:20px 0;text-align:center;}
+  .trail{display:flex;align-items:center;position:relative;margin:14px 0 6px;}
+  .trail .line{position:absolute;left:0;right:0;top:6px;height:1px;background:var(--line-strong);}
+  .trail .stages{flex:1;display:flex;justify-content:space-between;z-index:1;}
+  .trail .stage{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .trail .stage.clickable{cursor:pointer;}
+  .trail .stage .pt{width:12px;height:12px;border-radius:50%;background:var(--line-strong);}
+  .trail .stage .pt.done{background:var(--moss-light);}
+  .trail .stage .pt.now{width:15px;height:15px;border:2px solid var(--ink-2);}
+  .trail .stage .pt.now.ok{background:var(--moss-light);}
+  .trail .stage .pt.now.flag{background:var(--clay-light);}
+  .trail .stage span{font-size:10px;color:var(--text-dimmer);white-space:nowrap;}
+  .trail .stage.current span, .trail .stage.selected span{color:var(--paper);font-weight:500;}
+  .streak{display:flex;gap:4px;margin-top:8px;}
+  .streak .d{width:15px;height:15px;border-radius:3px;background:var(--line);}
+  .streak .d.on{background:var(--moss-light);}
+  .icon-del{cursor:pointer;color:var(--text-dimmer);font-size:13px;background:none;border:none;padding:2px 6px;}
+  .icon-del:hover{color:var(--clay-light);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);font-weight:500;padding:0 0 8px;border-bottom:1px solid var(--line-strong);}
+  td{padding:10px 0;border-bottom:1px solid var(--line);}
+  .datefield{position:relative;}
+  .date-btn{background:var(--ink);border:1px solid var(--line-strong);color:var(--paper);border-radius:6px;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:13px;width:100%;text-align:left;cursor:pointer;}
+  .date-btn:hover{border-color:var(--moss-light);}
+  .cal-popup{position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:var(--ink-2);border:1px solid var(--line-strong);border-radius:8px;padding:10px;width:230px;box-shadow:0 8px 20px rgba(0,0,0,0.35);}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;font-family:'Space Grotesk',sans-serif;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;text-align:center;}
+  .cal-dow{font-size:10px;color:var(--text-dimmer);padding-bottom:4px;}
+  .cal-day{padding:6px 0;border-radius:4px;cursor:pointer;color:var(--text-dim);position:relative;}
+  .cal-day:hover{background:var(--line-strong);color:var(--paper);}
+  .cal-day.today{border:1px solid var(--moss-light);}
+  .cal-day.selected{background:var(--moss);color:var(--paper);}
+  .cal-day.other{color:var(--text-dimmer);opacity:0.5;}
+  .cal-day .pips{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);display:flex;gap:2px;}
+  .cal-day .pip{width:3px;height:3px;border-radius:50%;}
+  .filter-row{display:flex;gap:10px;margin-bottom:16px;}
+  .filter-row select{width:170px;}
+  .task-priority{font-size:10px;text-transform:uppercase;letter-spacing:0.03em;width:56px;flex-shrink:0;}
+  .stage-panel{background:var(--ink);border:1px solid var(--line-strong);border-radius:8px;padding:14px 16px;margin-top:10px;}
+  .file-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(251,249,243,0.08);border-radius:5px;padding:4px 8px;font-size:12px;margin:4px 6px 0 0;}
+  .caption{font-size:11px;color:var(--text-dimmer);margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Basecamp</h1>
+      <p>Wandern Co. operations</p>
+    </div>
+    <div class="clock">
+      <div id="today">Tuesday, Aug 4</div>
+      <div class="mono" id="quicksum">loading…</div>
+    </div>
+  </div>
+
+  <nav id="nav"></nav>
+  <div class="nav-hint">Drag a tab to reorder — the leftmost tab opens by default.</div>
+
+  <section id="dashboard">
+    <div class="grid4" id="dash-stats"></div>
+    <div class="section-head"><h2>Runs in progress</h2></div>
+    <div id="dash-shipments"></div>
+    <div class="grid2" style="margin-top:22px;">
+      <div class="card">
+        <div class="section-head" style="margin-bottom:8px;"><h2 style="font-size:14px;">Posting streak — 14 days</h2></div>
+        <div class="streak" id="dash-streak"></div>
+      </div>
+      <div class="card">
+        <div class="section-head" style="margin-bottom:8px;"><h2 style="font-size:14px;">Next finance deadline</h2></div>
+        <div id="dash-finance"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tasks">
+    <div class="section-head"><h2>Tasks</h2><button class="btn" onclick="toggleForm('task-form')">+ add task</button></div>
+    <div class="form-panel" id="task-form">
+      <div class="form-grid">
+        <div class="field"><label>Title</label><input id="t-title" placeholder="Confirm quote with manufacturer"></div>
+        <div class="field"><label>Domain</label><select id="t-domain" onchange="handleDomainSelect(this.value)"></select></div>
+        <div class="field"><label>Priority</label>
+          <select id="t-priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select>
+        </div>
+        <div class="field"><label>Due date</label>
+          <div class="datefield">
+            <button type="button" class="date-btn" id="t-due-btn" onclick="openCal('t-due')">Pick date</button>
+            <input type="hidden" id="t-due">
+          </div>
+        </div>
+      </div>
+      <div class="field" id="new-domain-row" style="display:none;">
+        <label>New domain name</label>
+        <input id="new-domain-name" placeholder="e.g. Photography">
+        <button type="button" class="btn small" style="margin-top:6px;" onclick="confirmNewDomain()">Create domain</button>
+      </div>
+      <button class="btn" onclick="addTask()">Save task</button>
+      <button class="btn ghost" onclick="toggleForm('task-form')">Cancel</button>
+    </div>
+    <div class="filter-row">
+      <select id="task-filter-domain" onchange="renderTasks()"></select>
+      <select id="task-sort" onchange="renderTasks()">
+        <option value="due">Sort by due date</option>
+        <option value="priority">Sort by priority</option>
+        <option value="domain">Sort by domain</option>
+      </select>
+    </div>
+    <div id="task-list"></div>
+  </section>
+
+  <section id="timelines">
+    <div class="section-head"><h2>Timelines</h2><span class="caption">Sourcing → Production → Booked → In transit → Customs → Delivered. Click a waypoint to log notes or attachments for that stage.</span></div>
+    <div id="timeline-list" style="margin-top:14px;"></div>
+  </section>
+
+  <section id="shipments">
+    <div class="section-head"><h2>Shipments</h2><button class="btn" onclick="toggleForm('ship-form')">+ add shipment</button></div>
+    <div class="form-panel" id="ship-form">
+      <div class="form-grid">
+        <div class="field"><label>Name</label><input id="s-name" placeholder="Switch-Back Pants — Run 3"></div>
+        <div class="field"><label>Tracking number</label><input id="s-tracking" placeholder="Last-leg carrier tracking #"></div>
+        <div class="field">
+          <label>ETA</label>
+          <div class="datefield">
+            <button type="button" class="date-btn" id="s-eta-btn" onclick="openCal('s-eta')">Pick date</button>
+            <input type="hidden" id="s-eta">
+          </div>
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;gap:8px;">
+          <label style="margin:0 8px 0 0;display:inline;">
+            <input type="checkbox" id="s-flag" style="width:auto;vertical-align:middle;"> Flag for attention
+          </label>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="s-notes" rows="2" placeholder="Freight method, manufacturer, incoterm, or anything else worth remembering"></textarea></div>
+      <button class="btn" onclick="addShipment()">Save shipment</button>
+      <button class="btn ghost" onclick="toggleForm('ship-form')">Cancel</button>
+    </div>
+    <div id="ship-list"></div>
+  </section>
+
+  <section id="techpacks">
+    <div class="section-head"><h2>Techpacks</h2><button class="btn" onclick="toggleForm('tp-form')">+ add techpack</button></div>
+    <div class="form-panel" id="tp-form">
+      <div class="form-grid">
+        <div class="field"><label>Product name</label><input id="tp-name" placeholder="Core thermal"></div>
+        <div class="field"><label>Category</label>
+          <select id="tp-cat"><option>Pants</option><option>Beanie</option><option>Thermal</option><option>Midlayer</option><option>Hat</option><option>Other</option></select>
+        </div>
+        <div class="field"><label>Version</label><input id="tp-version" placeholder="v1"></div>
+        <div class="field"><label>Status</label>
+          <select id="tp-status"><option>Draft</option><option selected>Active</option><option>Under revision</option><option>Discontinued</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Materials / notes</label><textarea id="tp-notes" rows="2" placeholder="Fabric, print method, sizing notes"></textarea></div>
+      <button class="btn" onclick="addTechpack()">Save techpack</button>
+      <button class="btn ghost" onclick="toggleForm('tp-form')">Cancel</button>
+    </div>
+    <div class="grid3" id="tp-list"></div>
+  </section>
+
+  <section id="cases">
+    <div class="section-head"><h2>Customer cases</h2><button class="btn" onclick="toggleForm('case-form')">+ add case</button></div>
+    <div class="form-panel" id="case-form">
+      <div class="form-grid">
+        <div class="field"><label>Customer name</label><input id="cs-customer" placeholder="Customer name"></div>
+        <div class="field"><label>Issue type</label>
+          <select id="cs-issue"><option>Delayed shipment</option><option>Product defect</option><option>Refund request</option><option>Other</option></select>
+        </div>
+        <div class="field"><label>Resolution</label>
+          <select id="cs-resolution"><option>Pending</option><option>Free item</option><option>Discount code</option><option>Refund</option><option>Replacement</option></select>
+        </div>
+        <div class="field"><label>Status</label>
+          <select id="cs-status"><option selected>Open</option><option>Resolved</option><option>Escalated</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="cs-notes" rows="2"></textarea></div>
+      <button class="btn" onclick="addCase()">Save case</button>
+      <button class="btn ghost" onclick="toggleForm('case-form')">Cancel</button>
+    </div>
+    <div id="case-list"></div>
+  </section>
+
+  <section id="content">
+    <div class="section-head"><h2>Content calendar</h2><button class="btn" onclick="toggleForm('post-form')">+ add post</button></div>
+    <div class="form-panel" id="post-form">
+      <div class="form-grid">
+        <div class="field"><label>Platform</label>
+          <select id="p-platform"><option>Instagram</option><option>TikTok</option><option>Both</option></select>
+        </div>
+        <div class="field"><label>Type</label>
+          <select id="p-type"><option>Reel</option><option>Static post</option><option>Story</option><option>UGC repost</option></select>
+        </div>
+        <div class="field">
+          <label>Planned date</label>
+          <div class="datefield">
+            <button type="button" class="date-btn" id="p-date-btn" onclick="openCal('p-date')">Pick date</button>
+            <input type="hidden" id="p-date">
+          </div>
+        </div>
+        <div class="field"><label>Status</label>
+          <select id="p-status"><option>Idea</option><option>Scripted</option><option>Filmed</option><option>Edited</option><option>Scheduled</option><option>Posted</option></select>
+        </div>
+        <div class="field"><label>Linked product</label><input id="p-product" placeholder="Trailhead hat"></div>
+        <div class="field"><label>UGC partner</label><input id="p-partner" placeholder="Creator handle, optional"></div>
+      </div>
+      <div class="field"><label>Idea / caption</label><textarea id="p-notes" rows="2" placeholder="Hook, caption draft, or shot list"></textarea></div>
+      <button class="btn" onclick="addPost()">Save post</button>
+      <button class="btn ghost" onclick="toggleForm('post-form')">Cancel</button>
+    </div>
+
+    <div class="grid3" style="margin-bottom:20px;">
+      <div class="stat"><div class="l">Posts this month</div><div class="n" id="content-month-count">0</div></div>
+      <div class="stat"><div class="l">Current streak</div><div class="n" id="content-streak">0</div></div>
+      <div class="stat"><div class="l">Idea backlog</div><div class="n" id="content-backlog">0</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="cal-head">
+        <button type="button" class="btn ghost small" onclick="contentCalNav(-1)">‹</button>
+        <span id="content-cal-label" class="mono"></span>
+        <button type="button" class="btn ghost small" onclick="contentCalNav(1)">›</button>
+      </div>
+      <div class="cal-grid" id="content-cal-grid"></div>
+      <div class="caption" id="content-cal-filter-hint" style="display:none;">Showing posts for one day — <span style="text-decoration:underline;cursor:pointer;" onclick="clearContentDayFilter()">clear filter</span></div>
+    </div>
+
+    <div class="filter-row">
+      <select id="post-filter-platform" onchange="renderPosts()">
+        <option value="all">All platforms</option><option>Instagram</option><option>TikTok</option><option>Both</option>
+      </select>
+      <select id="post-filter-status" onchange="renderPosts()">
+        <option value="all">All statuses</option><option>Idea</option><option>Scripted</option><option>Filmed</option><option>Edited</option><option>Scheduled</option><option>Posted</option>
+      </select>
+    </div>
+    <div id="post-list"></div>
+  </section>
+
+  <section id="finance">
+    <div class="section-head"><h2>Finance</h2><button class="btn" onclick="toggleForm('f-form')">+ add item</button></div>
+    <div class="form-panel" id="f-form">
+      <div class="form-grid">
+        <div class="field"><label>Type</label>
+          <select id="f-type"><option>Credit card</option><option>Tax filing</option><option>Chargeback / refund</option><option>Other</option></select>
+        </div>
+        <div class="field"><label>Name</label><input id="f-name" placeholder="Q3 2026 CDTFA return"></div>
+        <div class="field">
+          <label>Due / key date</label>
+          <div class="datefield">
+            <button type="button" class="date-btn" id="f-date-btn" onclick="openCal('f-date')">Pick date</button>
+            <input type="hidden" id="f-date">
+          </div>
+        </div>
+        <div class="field"><label>Amount ($)</label><input id="f-amount" type="number" placeholder="0"></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+      <button class="btn" onclick="addFinance()">Save item</button>
+      <button class="btn ghost" onclick="toggleForm('f-form')">Cancel</button>
+    </div>
+    <div id="finance-list"></div>
+  </section>
+
+</div>
+
+<script>
+const ALL_TABS = ['dashboard','tasks','timelines','shipments','techpacks','cases','content','finance'];
+const TAB_LABELS = {dashboard:'Dashboard',tasks:'Tasks',timelines:'Timelines',shipments:'Shipments',techpacks:'Techpacks',cases:'Cases',content:'Content',finance:'Finance'};
+const STAGES = ['Sourcing','Production','Booked','In transit','Customs','Delivered'];
+const TODAY_ISO = '2026-08-04';
+const PALETTE = ['#D89A6E','#E6C784','#7FA084','#7FC9BE','#8FAFC9','#B98FC9','#C97F94','#9FC98F','#C9A15A','#A6A6C9'];
+const PRIORITY_COLOR = {Urgent:'#D89A6E', High:'#E6C784', Medium:'#7FA084', Low:'rgba(251,249,243,0.4)'};
+const PRIORITY_WEIGHT = {Urgent:0, High:1, Medium:2, Low:3};
+const PLATFORM_COLOR = {Instagram:'#C97F94', TikTok:'#7FC9BE', Both:'#B98FC9'};
+
+let DB = { tasks:[], shipments:[], techpacks:[], cases:[], content:[], finance:[], domains:[] };
+let TAB_ORDER = [...ALL_TABS];
+let currentActiveTab = 'dashboard';
+let draggedTab = null;
+let calState = { field:null, viewYear:0, viewMonth:0 };
+let selectedStageMap = {};
+let contentCalState = { year:2026, month:7 };
+let contentDayFilter = null;
+
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function hexToRgba(hex,a){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+async function loadKey(key, fallback){
+  try{ const r = await window.storage.get(key, false); return r ? JSON.parse(r.value) : fallback; }
+  catch(e){ return fallback; }
+}
+async function saveKey(key, value){
+  try{ await window.storage.set(key, JSON.stringify(value), false); }
+  catch(e){ console.error('storage error', key, e); }
+}
+
+function defaultStages(){
+  const obj={};
+  STAGES.forEach((st,i)=>{ obj[st] = { status: i===0 ? 'current' : 'pending', notes:'', files:[] }; });
+  return obj;
+}
+
+function seed(){
+  const s2 = defaultStages(); s2['Sourcing'].status='done'; s2['Production'].status='done'; s2['Booked'].status='done'; s2['In transit'].status='current';
+  const s2b = defaultStages(); s2b['Sourcing'].status='done'; s2b['Production'].status='done'; s2b['Booked'].status='done'; s2b['In transit'].status='done'; s2b['Customs'].status='current'; s2b['Customs'].notes='6 days in hold — documentation review needed.';
+  return {
+    domains:[
+      {name:'Sourcing',color:'#D89A6E'},{name:'Logistics',color:'#E6C784'},{name:'Customer service',color:'#7FA084'},
+      {name:'Marketing',color:'#7FC9BE'},{name:'Finance',color:'#8FAFC9'},{name:'School',color:'#B98FC9'},{name:'General',color:'#9A968C'}
+    ],
+    tasks:[
+      {id:uid(),title:'Confirm 100-unit quote with new manufacturer',domain:'Sourcing',priority:'High',due:'2026-08-04',status:'Open'},
+      {id:uid(),title:'Send missing customs docs to Will Nunes',domain:'Logistics',priority:'Urgent',due:'2026-08-02',status:'Open'},
+      {id:uid(),title:'Follow up with open remediation cases',domain:'Customer service',priority:'Medium',due:'2026-08-04',status:'Open'},
+      {id:uid(),title:'Film hat UGC brief for microcreator outreach',domain:'Marketing',priority:'Medium',due:'2026-08-05',status:'Open'}
+    ],
+    shipments:[
+      {id:uid(),name:'Switch-Back Pants — Run 2',tracking:'1Z-EMD-88213',eta:'2026-08-14',notes:'LCL, EMD Customs Broker handling end to end.',flagged:false,stages:s2},
+      {id:uid(),name:'Thermals — restock',tracking:'',eta:'2026-08-09',notes:'Air freight, existing supplier.',flagged:true,stages:s2b}
+    ],
+    techpacks:[
+      {id:uid(),name:'Switch-Back Pants',cat:'Pants',version:'v3',status:'Active',notes:'Current production spec.'},
+      {id:uid(),name:'Core thermal',cat:'Thermal',version:'v2',status:'Under revision',notes:'Resolving DTF opacity and wash color bleed.'},
+      {id:uid(),name:'Trailhead hat',cat:'Hat',version:'v1',status:'Active',notes:'$34 retail.'}
+    ],
+    cases:[
+      {id:uid(),customer:'Instagram DM batch — Switch-Back delay',issue:'Delayed shipment',resolution:'Discount code',status:'Resolved',notes:'45+ customers, beanies/hats + 20% codes.'}
+    ],
+    content:[
+      {id:uid(),platform:'Instagram',type:'Reel',date:'2026-07-24',status:'Posted',product:'',partner:'',notes:''},
+      {id:uid(),platform:'TikTok',type:'UGC repost',date:'2026-07-25',status:'Posted',product:'',partner:'',notes:''}
+    ],
+    finance:[
+      {id:uid(),type:'Tax filing',name:'Q3 2026 CDTFA return',date:'2026-10-01',amount:0,notes:''},
+      {id:uid(),type:'Credit card',name:'Chase Ink reapply window',date:'2026-11-15',amount:0,notes:''}
+    ]
+  };
+}
+
+async function loadAll(){
+  const s = seed();
+  DB.domains = await loadKey('wandern:domains', s.domains);
+  DB.tasks = await loadKey('wandern:tasks', s.tasks);
+  DB.shipments = await loadKey('wandern:shipments', s.shipments);
+  DB.techpacks = await loadKey('wandern:techpacks', s.techpacks);
+  DB.cases = await loadKey('wandern:cases', s.cases);
+  DB.content = await loadKey('wandern:content', s.content);
+  DB.finance = await loadKey('wandern:finance', s.finance);
+  TAB_ORDER = await loadKey('wandern:tab-order', [...ALL_TABS]);
+  const missing = ALL_TABS.filter(t=>!TAB_ORDER.includes(t));
+  TAB_ORDER = TAB_ORDER.filter(t=>ALL_TABS.includes(t)).concat(missing);
+  currentActiveTab = TAB_ORDER[0];
+}
+
+function toggleForm(id){ document.getElementById(id).classList.toggle('open'); }
+
+/* ---------- nav with drag reorder ---------- */
+function renderNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  TAB_ORDER.forEach(t=>{
+    const b = document.createElement('button');
+    b.textContent = TAB_LABELS[t];
+    b.className = t===currentActiveTab ? 'active' : '';
+    b.draggable = true;
+    b.onclick = ()=> setActiveTab(t);
+    b.addEventListener('dragstart', e=>{ draggedTab = t; e.dataTransfer.effectAllowed='move'; });
+    b.addEventListener('dragover', e=>{ e.preventDefault(); b.classList.add('drag-over'); });
+    b.addEventListener('dragleave', ()=> b.classList.remove('drag-over'));
+    b.addEventListener('drop', e=>{
+      e.preventDefault(); b.classList.remove('drag-over');
+      if(!draggedTab || draggedTab===t) return;
+      const fromIdx = TAB_ORDER.indexOf(draggedTab);
+      const toIdx = TAB_ORDER.indexOf(t);
+      TAB_ORDER.splice(fromIdx,1);
+      TAB_ORDER.splice(toIdx,0,draggedTab);
+      saveKey('wandern:tab-order', TAB_ORDER);
+      draggedTab = null;
+      renderNav();
+    });
+    nav.appendChild(b);
+  });
+}
+function setActiveTab(t){
+  currentActiveTab = t;
+  ALL_TABS.forEach(x=> document.getElementById(x).classList.toggle('active', x===t));
+  renderNav();
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function daysUntil(d){
+  if(!d) return 999;
+  return Math.round((new Date(d+'T00:00:00')-new Date(TODAY_ISO+'T00:00:00'))/86400000);
+}
+
+/* ---------- domains ---------- */
+function domainColor(name){ const d = DB.domains.find(x=>x.name===name); return d ? d.color : '#9A968C'; }
+function renderDomainOptions(){
+  const sel = document.getElementById('t-domain'); const current = sel.value;
+  sel.innerHTML = DB.domains.map(d=>`<option value="${d.name}">${d.name}</option>`).join('') + `<option value="__new__">+ New domain…</option>`;
+  if(current && DB.domains.some(d=>d.name===current)) sel.value = current;
+}
+function renderTaskFilterOptions(){
+  const sel = document.getElementById('task-filter-domain'); const current = sel.value;
+  sel.innerHTML = `<option value="all">All domains</option>` + DB.domains.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+  if(current && (current==='all' || DB.domains.some(d=>d.name===current))) sel.value = current;
+}
+function handleDomainSelect(val){ document.getElementById('new-domain-row').style.display = val==='__new__' ? 'block' : 'none'; }
+function confirmNewDomain(){
+  const input = document.getElementById('new-domain-name'); const name = input.value.trim();
+  if(!name) return;
+  let existing = DB.domains.find(d=>d.name.toLowerCase()===name.toLowerCase());
+  if(!existing){ const color = PALETTE[DB.domains.length % PALETTE.length]; existing = {name,color}; DB.domains.push(existing); saveKey('wandern:domains', DB.domains); }
+  renderDomainOptions(); renderTaskFilterOptions();
+  document.getElementById('t-domain').value = existing.name;
+  document.getElementById('new-domain-row').style.display = 'none'; input.value = '';
+}
+
+/* ---------- date picker ---------- */
+function openCal(fieldId){
+  if(calState.field === fieldId){ removePopup(); calState.field=null; return; }
+  calState.field = fieldId;
+  const existing = document.getElementById(fieldId).value;
+  const base = existing ? new Date(existing+'T00:00:00') : new Date(TODAY_ISO+'T00:00:00');
+  calState.viewYear = base.getFullYear(); calState.viewMonth = base.getMonth();
+  renderCal();
+}
+function removePopup(){ const el = document.getElementById('cal-popup-host'); if(el) el.remove(); }
+function calNav(delta){
+  calState.viewMonth += delta;
+  if(calState.viewMonth<0){ calState.viewMonth=11; calState.viewYear--; }
+  if(calState.viewMonth>11){ calState.viewMonth=0; calState.viewYear++; }
+  renderCal();
+}
+function renderCal(){
+  removePopup();
+  const btn = document.getElementById(calState.field+'-btn');
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const y=calState.viewYear, m=calState.viewMonth;
+  const startDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const daysInPrev = new Date(y,m,0).getDate();
+  const selected = document.getElementById(calState.field).value;
+  let cells='';
+  for(let i=0;i<startDow;i++){ cells+=`<div class="cal-day other">${daysInPrev-startDow+1+i}</div>`; }
+  for(let d=1; d<=daysInMonth; d++){
+    const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls='cal-day'; if(iso===TODAY_ISO) cls+=' today'; if(iso===selected) cls+=' selected';
+    cells+=`<div class="${cls}" onclick="pickDate('${iso}')">${d}</div>`;
+  }
+  const remain = (7-((startDow+daysInMonth)%7))%7;
+  for(let i=1;i<=remain;i++){ cells+=`<div class="cal-day other">${i}</div>`; }
+  const popup = document.createElement('div'); popup.className='cal-popup'; popup.id='cal-popup-host';
+  popup.innerHTML = `
+    <div class="cal-head"><button type="button" class="btn ghost small" onclick="calNav(-1)">‹</button><span>${monthNames[m]} ${y}</span><button type="button" class="btn ghost small" onclick="calNav(1)">›</button></div>
+    <div class="cal-grid"><div class="cal-dow">S</div><div class="cal-dow">M</div><div class="cal-dow">T</div><div class="cal-dow">W</div><div class="cal-dow">T</div><div class="cal-dow">F</div><div class="cal-dow">S</div>${cells}</div>
+    <div style="text-align:right;margin-top:8px;"><button type="button" class="btn ghost small" onclick="clearDate()">Clear</button></div>`;
+  btn.parentElement.appendChild(popup);
+}
+function pickDate(iso){ document.getElementById(calState.field).value = iso; updateDateBtn(calState.field); removePopup(); calState.field = null; }
+function clearDate(){ document.getElementById(calState.field).value = ''; updateDateBtn(calState.field); removePopup(); calState.field = null; }
+function updateDateBtn(fieldId){ const val = document.getElementById(fieldId).value; document.getElementById(fieldId+'-btn').textContent = val ? fmtDate(val) : 'Pick date'; }
+document.addEventListener('click', function(e){
+  const popup = document.getElementById('cal-popup-host'); if(!popup) return;
+  if(popup.contains(e.target)) return;
+  if(e.target.classList && e.target.classList.contains('date-btn')) return;
+  removePopup(); calState.field = null;
+});
+
+/* ---------- shipment stage helpers ---------- */
+function currentStageName(s){
+  let cur = STAGES.find(st=> s.stages[st] && s.stages[st].status==='current'); if(cur) return cur;
+  let pend = STAGES.find(st=> s.stages[st] && s.stages[st].status==='pending'); if(pend) return pend;
+  return STAGES[STAGES.length-1];
+}
+function trailHTML(s, interactive){
+  const stagesHTML = STAGES.map((st)=>{
+    const info = s.stages[st] || {status:'pending'};
+    let ptClass='pt';
+    if(info.status==='done') ptClass+=' done';
+    if(info.status==='current') ptClass += ' now ' + (s.flagged?'flag':'ok');
+    const isSelected = interactive && selectedStageMap[s.id]===st;
+    const stageClass = 'stage' + (info.status==='current'?' current':'') + (isSelected?' selected':'') + (interactive?' clickable':'');
+    const onclick = interactive ? ` onclick="selectStage('${s.id}','${st}')"` : '';
+    return `<div class="${stageClass}"${onclick}><div class="${ptClass}"></div><span>${st}</span></div>`;
+  }).join('');
+  return `<div class="trail"><div class="line"></div><div class="stages">${stagesHTML}</div></div>`;
+}
+function shipmentSummaryHTML(s){
+  return `
+    <div class="card">
+      <div class="section-head" style="margin-bottom:0;">
+        <div style="font-weight:500;font-size:15px;">${s.name}</div>
+        <span class="tag ${s.flagged?'tag-clay':'tag-moss'}">${s.flagged?'Flagged':'On track'}</span>
+      </div>
+      ${trailHTML(s,false)}
+      <div class="mono" style="font-size:12px;color:var(--text-dim);margin-top:8px;">${s.tracking?('Tracking '+s.tracking+' · '):''}ETA ${fmtDate(s.eta)}</div>
+      ${s.notes?`<div style="font-size:12px;color:${s.flagged?'var(--clay-light)':'var(--text-dim)'};margin-top:6px;">${s.notes}</div>`:''}
+    </div>`;
+}
+
+/* ---------- dashboard ---------- */
+function renderDashboard(){
+  const openTasks = DB.tasks.filter(t=>t.status!=='Done').length;
+  const overdue = DB.tasks.filter(t=>t.status!=='Done' && t.due && daysUntil(t.due)<0).length;
+  const activeShip = DB.shipments.filter(s=>currentStageName(s)!=='Delivered').length;
+  const openCases = DB.cases.filter(c=>c.status!=='Resolved').length;
+
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat"><div class="l">Active shipments</div><div class="n">${activeShip}</div></div>
+    <div class="stat"><div class="l">Open tasks</div><div class="n">${openTasks}</div></div>
+    <div class="stat"><div class="l">Open cases</div><div class="n">${openCases}</div></div>
+    <div class="stat"><div class="l">Overdue tasks</div><div class="n" style="color:${overdue>0?'var(--clay-light)':'var(--paper)'}">${overdue}</div></div>`;
+
+  document.getElementById('dash-shipments').innerHTML = DB.shipments.filter(s=>currentStageName(s)!=='Delivered').slice(0,3).map(shipmentSummaryHTML).join('') || '<div class="empty">No active shipments.</div>';
+
+  const streak = document.getElementById('dash-streak'); streak.innerHTML='';
+  for(let i=13;i>=0;i--){
+    const dt = new Date(TODAY_ISO+'T00:00:00'); dt.setDate(dt.getDate()-i);
+    const iso = dt.toISOString().slice(0,10);
+    const on = DB.content.some(p=>p.date===iso && p.status==='Posted');
+    const el = document.createElement('div'); el.className = 'd'+(on?' on':''); el.title = iso; streak.appendChild(el);
+  }
+
+  const upcoming = [...DB.finance].filter(f=>f.date && daysUntil(f.date)>=0).sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+  document.getElementById('dash-finance').innerHTML = upcoming
+    ? `<div style="font-size:14px;font-weight:500;">${upcoming.name}</div><div class="mono" style="font-size:12px;color:var(--text-dim);margin-top:4px;">${fmtDate(upcoming.date)} · ${daysUntil(upcoming.date)} days out</div>`
+    : '<div class="empty">Nothing upcoming.</div>';
+
+  document.getElementById('quicksum').textContent = `${activeShip} in transit · ${DB.content.filter(p=>p.status==='Posted').length} posts logged`;
+}
+
+/* ---------- tasks ---------- */
+function renderTasks(){
+  renderDomainOptions(); renderTaskFilterOptions();
+  const list = document.getElementById('task-list');
+  const filter = document.getElementById('task-filter-domain').value || 'all';
+  const sortBy = document.getElementById('task-sort').value || 'due';
+  let items = [...DB.tasks];
+  if(filter!=='all') items = items.filter(t=>t.domain===filter);
+  if(sortBy==='due') items.sort((a,b)=> (a.due?new Date(a.due):new Date('2100-01-01')) - (b.due?new Date(b.due):new Date('2100-01-01')));
+  if(sortBy==='priority') items.sort((a,b)=> PRIORITY_WEIGHT[a.priority]-PRIORITY_WEIGHT[b.priority]);
+  if(sortBy==='domain') items.sort((a,b)=> a.domain.localeCompare(b.domain));
+  if(!items.length){ list.innerHTML='<div class="empty">No tasks match this view.</div>'; return; }
+  list.innerHTML = items.map(t=>{
+    const color = domainColor(t.domain);
+    const overdue = t.due && t.status!=='Done' && daysUntil(t.due)<0;
+    return `<div class="row">
+      <div class="dot" style="background:${color}"></div>
+      <span class="tag" style="background:${hexToRgba(color,0.18)};color:${color};width:120px;text-align:center;">${t.domain}</span>
+      <span class="task-priority" style="color:${PRIORITY_COLOR[t.priority]||'var(--text-dim)'}">${t.priority}</span>
+      <span style="flex:1;font-size:14px;${t.status==='Done'?'text-decoration:line-through;color:var(--text-dimmer);':''}">${t.title}</span>
+      <span class="mono" style="font-size:12px;color:${overdue?'var(--clay-light)':'var(--text-dim)'};width:56px;text-align:right;">${fmtDate(t.due)}</span>
+      <select onchange="updateTaskStatus('${t.id}',this.value)" style="width:120px;">
+        <option ${t.status==='Open'?'selected':''}>Open</option><option ${t.status==='In progress'?'selected':''}>In progress</option>
+        <option ${t.status==='Blocked'?'selected':''}>Blocked</option><option ${t.status==='Done'?'selected':''}>Done</option>
+      </select>
+      <button class="icon-del" onclick="deleteItem('tasks','${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+function addTask(){
+  const title = document.getElementById('t-title').value.trim();
+  const domain = document.getElementById('t-domain').value;
+  if(!title) return;
+  if(domain==='__new__'){ alert('Create the new domain first, then save the task.'); return; }
+  DB.tasks.unshift({id:uid(),title,domain,priority:document.getElementById('t-priority').value,due:document.getElementById('t-due').value,status:'Open'});
+  saveKey('wandern:tasks', DB.tasks);
+  document.getElementById('t-title').value=''; document.getElementById('t-due').value=''; updateDateBtn('t-due');
+  toggleForm('task-form'); renderTasks(); renderDashboard();
+}
+function updateTaskStatus(id,val){ const t = DB.tasks.find(x=>x.id===id); if(t){ t.status=val; saveKey('wandern:tasks',DB.tasks); renderTasks(); renderDashboard(); } }
+
+/* ---------- timelines ---------- */
+function renderTimelines(){
+  const list = document.getElementById('timeline-list');
+  if(!DB.shipments.length){ list.innerHTML='<div class="empty">No runs yet — add one from the Shipments tab.</div>'; return; }
+  list.innerHTML = DB.shipments.map(s=>{
+    if(!selectedStageMap[s.id]) selectedStageMap[s.id] = currentStageName(s);
+    const stName = selectedStageMap[s.id];
+    const info = s.stages[stName];
+    const filesHTML = (info.files||[]).map((f,i)=>`<span class="file-chip">${f}<button class="icon-del" style="padding:0 2px;" onclick="removeStageFile('${s.id}','${stName}',${i})">✕</button></span>`).join('');
+    return `
+    <div class="card">
+      <div class="section-head" style="margin-bottom:0;">
+        <div style="font-weight:500;font-size:15px;">${s.name}</div>
+        <span class="tag ${s.flagged?'tag-clay':'tag-moss'}">${s.flagged?'Flagged':'On track'}</span>
+      </div>
+      ${trailHTML(s,true)}
+      <div class="stage-panel">
+        <div class="section-head" style="margin-bottom:10px;">
+          <h3 style="font-size:14px;">${stName}</h3>
+          <select style="width:130px;" onchange="updateStageField('${s.id}','${stName}','status',this.value)">
+            <option value="pending" ${info.status==='pending'?'selected':''}>Pending</option>
+            <option value="current" ${info.status==='current'?'selected':''}>Current</option>
+            <option value="done" ${info.status==='done'?'selected':''}>Done</option>
+          </select>
+        </div>
+        <div class="field"><label>Notes for this stage</label>
+          <textarea rows="2" onchange="updateStageField('${s.id}','${stName}','notes',this.value)" placeholder="What happened, who to follow up with, dates">${info.notes||''}</textarea>
+        </div>
+        <div class="field">
+          <label>Attachments</label>
+          <div style="display:flex;gap:8px;">
+            <input id="file-input-${s.id}-${stName.replace(/\\s/g,'')}" placeholder="e.g. packing-list.pdf">
+            <button type="button" class="btn small" onclick="addStageFile('${s.id}','${stName}')">Add</button>
+          </div>
+          <div class="caption">Stores the file name as a reference — not an actual file upload.</div>
+          <div style="margin-top:6px;">${filesHTML || '<span class="caption">No attachments logged.</span>'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function selectStage(shipmentId, stageName){ selectedStageMap[shipmentId] = stageName; renderTimelines(); }
+function updateStageField(shipmentId, stageName, field, value){
+  const s = DB.shipments.find(x=>x.id===shipmentId); if(!s) return;
+  s.stages[stageName][field] = value;
+  saveKey('wandern:shipments', DB.shipments);
+  renderTimelines(); renderDashboard();
+}
+function addStageFile(shipmentId, stageName){
+  const inputId = `file-input-${shipmentId}-${stageName.replace(/\s/g,'')}`;
+  const input = document.getElementById(inputId); const name = input.value.trim();
+  if(!name) return;
+  const s = DB.shipments.find(x=>x.id===shipmentId);
+  s.stages[stageName].files = s.stages[stageName].files || [];
+  s.stages[stageName].files.push(name);
+  saveKey('wandern:shipments', DB.shipments);
+  input.value = ''; renderTimelines();
+}
+function removeStageFile(shipmentId, stageName, idx){
+  const s = DB.shipments.find(x=>x.id===shipmentId);
+  s.stages[stageName].files.splice(idx,1);
+  saveKey('wandern:shipments', DB.shipments);
+  renderTimelines();
+}
+
+/* ---------- shipments (simple log) ---------- */
+function renderShipments(){
+  const list = document.getElementById('ship-list');
+  if(!DB.shipments.length){ list.innerHTML='<div class="empty">No shipments yet.</div>'; return; }
+  list.innerHTML = DB.shipments.map(s=>`
+    <div class="row">
+      <span class="tag ${s.flagged?'tag-clay':'tag-moss'}" style="width:90px;text-align:center;">${s.flagged?'Flagged':'On track'}</span>
+      <span style="flex:1;font-size:14px;">${s.name}</span>
+      <span class="mono" style="font-size:12px;color:var(--text-dim);width:140px;">${s.tracking||'no tracking #'}</span>
+      <span class="mono" style="font-size:12px;color:var(--text-dim);width:70px;text-align:right;">${fmtDate(s.eta)}</span>
+      <button class="icon-del" onclick="deleteItem('shipments','${s.id}')">✕</button>
+    </div>`).join('');
+}
+function addShipment(){
+  const name = document.getElementById('s-name').value.trim();
+  if(!name) return;
+  DB.shipments.unshift({
+    id:uid(), name, tracking:document.getElementById('s-tracking').value,
+    eta:document.getElementById('s-eta').value, notes:document.getElementById('s-notes').value,
+    flagged: document.getElementById('s-flag').checked, stages: defaultStages()
+  });
+  saveKey('wandern:shipments', DB.shipments);
+  document.getElementById('s-name').value=''; document.getElementById('s-tracking').value='';
+  document.getElementById('s-notes').value=''; document.getElementById('s-flag').checked=false;
+  document.getElementById('s-eta').value=''; updateDateBtn('s-eta');
+  toggleForm('ship-form'); renderShipments(); renderTimelines(); renderDashboard();
+}
+
+/* ---------- techpacks ---------- */
+function renderTechpacks(){
+  const list = document.getElementById('tp-list');
+  if(!DB.techpacks.length){ list.innerHTML='<div class="empty">No techpacks yet.</div>'; return; }
+  list.innerHTML = DB.techpacks.map(tp=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div style="font-weight:500;font-size:14px;">${tp.name}</div><div style="font-size:12px;color:var(--text-dim);margin-top:2px;">${tp.cat} · ${tp.version}</div></div>
+        <button class="icon-del" onclick="deleteItem('techpacks','${tp.id}')">✕</button>
+      </div>
+      <span class="tag ${tp.status==='Under revision'?'tag-clay':tp.status==='Active'?'tag-moss':'tag-dim'}" style="margin-top:10px;display:inline-block;">${tp.status}</span>
+      ${tp.notes?`<div style="font-size:12px;color:var(--text-dim);margin-top:8px;">${tp.notes}</div>`:''}
+    </div>`).join('');
+}
+function addTechpack(){
+  const name = document.getElementById('tp-name').value.trim(); if(!name) return;
+  DB.techpacks.unshift({id:uid(),name,cat:document.getElementById('tp-cat').value,version:document.getElementById('tp-version').value||'v1',status:document.getElementById('tp-status').value,notes:document.getElementById('tp-notes').value});
+  saveKey('wandern:techpacks', DB.techpacks);
+  document.getElementById('tp-name').value=''; document.getElementById('tp-notes').value='';
+  toggleForm('tp-form'); renderTechpacks();
+}
+
+/* ---------- cases ---------- */
+function renderCases(){
+  const list = document.getElementById('case-list');
+  if(!DB.cases.length){ list.innerHTML='<div class="empty">No cases yet.</div>'; return; }
+  list.innerHTML = DB.cases.map(c=>`
+    <div class="row">
+      <span class="tag ${c.status==='Open'?'tag-clay':c.status==='Escalated'?'tag-amber':'tag-moss'}" style="width:90px;text-align:center;">${c.status}</span>
+      <span style="flex:1;font-size:14px;">${c.customer}</span>
+      <span style="font-size:12px;color:var(--text-dim);width:140px;">${c.issue}</span>
+      <span style="font-size:12px;color:var(--text-dim);width:120px;">${c.resolution}</span>
+      <button class="icon-del" onclick="deleteItem('cases','${c.id}')">✕</button>
+    </div>`).join('');
+}
+function addCase(){
+  const customer = document.getElementById('cs-customer').value.trim(); if(!customer) return;
+  DB.cases.unshift({id:uid(),customer,issue:document.getElementById('cs-issue').value,resolution:document.getElementById('cs-resolution').value,status:document.getElementById('cs-status').value,notes:document.getElementById('cs-notes').value});
+  saveKey('wandern:cases', DB.cases);
+  document.getElementById('cs-customer').value='';
+  toggleForm('case-form'); renderCases(); renderDashboard();
+}
+
+/* ---------- content ---------- */
+function currentStreak(){
+  let streak=0; let d = new Date(TODAY_ISO+'T00:00:00');
+  while(true){
+    const iso = d.toISOString().slice(0,10);
+    if(DB.content.some(p=>p.date===iso && p.status==='Posted')){ streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+function contentCalNav(delta){
+  contentCalState.month += delta;
+  if(contentCalState.month<0){ contentCalState.month=11; contentCalState.year--; }
+  if(contentCalState.month>11){ contentCalState.month=0; contentCalState.year++; }
+  renderContentCalendar();
+}
+function selectContentDay(iso){ contentDayFilter = (contentDayFilter===iso) ? null : iso; renderContentCalendar(); renderPosts(); }
+function clearContentDayFilter(){ contentDayFilter = null; renderContentCalendar(); renderPosts(); }
+function renderContentCalendar(){
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const y=contentCalState.year, m=contentCalState.month;
+  document.getElementById('content-cal-label').textContent = `${monthNames[m]} ${y}`;
+  const startDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const daysInPrev = new Date(y,m,0).getDate();
+  let cells='';
+  for(let i=0;i<startDow;i++){ cells+=`<div class="cal-day other">${daysInPrev-startDow+1+i}</div>`; }
+  for(let d=1; d<=daysInMonth; d++){
+    const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const posts = DB.content.filter(p=>p.date===iso);
+    let cls='cal-day'; if(iso===TODAY_ISO) cls+=' today'; if(iso===contentDayFilter) cls+=' selected';
+    const pips = posts.slice(0,3).map(p=>`<span class="pip" style="background:${PLATFORM_COLOR[p.platform]||'#888'}"></span>`).join('');
+    cells+=`<div class="${cls}" onclick="selectContentDay('${iso}')">${d}${pips?`<div class="pips">${pips}</div>`:''}</div>`;
+  }
+  const remain = (7-((startDow+daysInMonth)%7))%7;
+  for(let i=1;i<=remain;i++){ cells+=`<div class="cal-day other">${i}</div>`; }
+  document.getElementById('content-cal-grid').innerHTML = `<div class="cal-dow">S</div><div class="cal-dow">M</div><div class="cal-dow">T</div><div class="cal-dow">W</div><div class="cal-dow">T</div><div class="cal-dow">F</div><div class="cal-dow">S</div>${cells}`;
+  document.getElementById('content-cal-filter-hint').style.display = contentDayFilter ? 'block' : 'none';
+}
+function renderPosts(){
+  const platformFilter = document.getElementById('post-filter-platform').value || 'all';
+  const statusFilter = document.getElementById('post-filter-status').value || 'all';
+  let items = [...DB.content];
+  if(platformFilter!=='all') items = items.filter(p=>p.platform===platformFilter);
+  if(statusFilter!=='all') items = items.filter(p=>p.status===statusFilter);
+  if(contentDayFilter) items = items.filter(p=>p.date===contentDayFilter);
+  items.sort((a,b)=>new Date(b.date||'2000-01-01')-new Date(a.date||'2000-01-01'));
+
+  const list = document.getElementById('post-list');
+  list.innerHTML = items.length ? items.map(p=>`
+    <div class="row">
+      <span class="dot" style="background:${PLATFORM_COLOR[p.platform]||'#888'}"></span>
+      <span class="tag tag-dim" style="width:80px;text-align:center;">${p.platform}</span>
+      <span style="flex:1;font-size:14px;">${p.type}${p.product?' · '+p.product:''}${p.notes?' — '+p.notes:''}</span>
+      <span class="mono" style="font-size:12px;color:var(--text-dim);width:56px;text-align:right;">${fmtDate(p.date)}</span>
+      <span class="tag ${p.status==='Posted'?'tag-moss':'tag-dim'}" style="width:90px;text-align:center;">${p.status}</span>
+      <button class="icon-del" onclick="deleteItem('content','${p.id}')">✕</button>
+    </div>`).join('') : '<div class="empty">No posts match this view.</div>';
+
+  const now = new Date(TODAY_ISO+'T00:00:00');
+  document.getElementById('content-month-count').textContent = DB.content.filter(p=>p.status==='Posted' && p.date && new Date(p.date+'T00:00:00').getMonth()===now.getMonth() && new Date(p.date+'T00:00:00').getFullYear()===now.getFullYear()).length;
+  document.getElementById('content-streak').textContent = currentStreak();
+  document.getElementById('content-backlog').textContent = DB.content.filter(p=>p.status==='Idea'||p.status==='Scripted').length;
+}
+function addPost(){
+  const date = document.getElementById('p-date').value; if(!date) return;
+  DB.content.unshift({id:uid(),platform:document.getElementById('p-platform').value,type:document.getElementById('p-type').value,date,status:document.getElementById('p-status').value,product:document.getElementById('p-product').value,partner:document.getElementById('p-partner').value,notes:document.getElementById('p-notes').value});
+  saveKey('wandern:content', DB.content);
+  document.getElementById('p-notes').value=''; document.getElementById('p-product').value=''; document.getElementById('p-partner').value='';
+  document.getElementById('p-date').value=''; updateDateBtn('p-date');
+  toggleForm('post-form'); renderContentCalendar(); renderPosts(); renderDashboard();
+}
+
+/* ---------- finance ---------- */
+function renderFinance(){
+  const list = document.getElementById('finance-list');
+  if(!DB.finance.length){ list.innerHTML='<div class="empty">No finance items yet.</div>'; return; }
+  const sorted = [...DB.finance].sort((a,b)=>new Date(a.date||'2100-01-01')-new Date(b.date||'2100-01-01'));
+  list.innerHTML = sorted.map(f=>`
+    <div class="row">
+      <span class="tag tag-dim" style="width:130px;text-align:center;">${f.type}</span>
+      <span style="flex:1;font-size:14px;">${f.name}</span>
+      ${f.amount?`<span class="mono" style="font-size:12px;color:var(--text-dim);">$${Number(f.amount).toLocaleString()}</span>`:''}
+      <span class="mono" style="font-size:12px;color:${f.date && daysUntil(f.date)<0?'var(--clay-light)':'var(--text-dim)'};width:70px;text-align:right;">${fmtDate(f.date)}</span>
+      <button class="icon-del" onclick="deleteItem('finance','${f.id}')">✕</button>
+    </div>`).join('');
+}
+function addFinance(){
+  const name = document.getElementById('f-name').value.trim(); if(!name) return;
+  DB.finance.unshift({id:uid(),type:document.getElementById('f-type').value,name,date:document.getElementById('f-date').value,amount:document.getElementById('f-amount').value,notes:document.getElementById('f-notes').value});
+  saveKey('wandern:finance', DB.finance);
+  document.getElementById('f-name').value=''; document.getElementById('f-date').value=''; updateDateBtn('f-date');
+  toggleForm('f-form'); renderFinance(); renderDashboard();
+}
+
+function deleteItem(collection,id){
+  DB[collection] = DB[collection].filter(x=>x.id!==id);
+  saveKey('wandern:'+collection, DB[collection]);
+  renderAll();
+}
+function renderAll(){
+  renderDashboard(); renderTasks(); renderTimelines(); renderShipments(); renderTechpacks();
+  renderCases(); renderContentCalendar(); renderPosts(); renderFinance();
+}
+
+(async function init(){
+  await loadAll();
+  renderNav();
+  ALL_TABS.forEach(x=> document.getElementById(x).classList.toggle('active', x===currentActiveTab));
+  renderAll();
+})();
+</script>
+</body>
+</html>

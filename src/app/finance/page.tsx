@@ -1,18 +1,18 @@
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
-import { TaskForm } from "./task-form";
-import { TaskListLoader } from "./task-list-loader";
+import { FinanceForm } from "./finance-form";
+import { FinanceList } from "./finance-list";
 
 export const dynamic = "force-dynamic";
 
-export default function TasksPage() {
+export default function FinancePage() {
   return (
     <div className="basecamp" style={{ minHeight: "100vh" }}>
       <AppNav />
       <main className="wrap content-fade" style={{ paddingTop: 0 }}>
-        <TaskForm />
+        <FinanceForm />
         <Suspense fallback={<div className="empty">Loading…</div>}>
-          <TaskListLoader />
+          <FinanceList />
         </Suspense>
       </main>
     </div>
