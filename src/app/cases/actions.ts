@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { CaseIssue, CaseResolution, CaseStatus } from "@/generated/prisma/client";
+import { CaseIssue, CaseResolution, CaseStatus } from "@prisma/client";
 
 export async function createCase(formData: FormData) {
   const customer = String(formData.get("customer") ?? "").trim();

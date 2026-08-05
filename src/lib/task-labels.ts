@@ -1,4 +1,4 @@
-import { Domain, Priority, TaskStatus } from "@/generated/prisma/client";
+import { Domain, Priority, TaskStatus } from "@prisma/client";
 
 export const domainLabels: Record<Domain, string> = {
   Sourcing: "Sourcing",

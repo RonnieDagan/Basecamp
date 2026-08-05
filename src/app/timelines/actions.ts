@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { StageStatus } from "@/generated/prisma/client";
+import { StageStatus } from "@prisma/client";
 import { STAGE_NAMES } from "@/lib/stages";
 import { uploadFile, deleteFile } from "@/lib/file-storage";
 

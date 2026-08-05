@@ -10,7 +10,7 @@ import {
   updateTimelineFlag,
   deleteTimeline,
 } from "./actions";
-import type { Timeline as TimelineRow, TimelineStage, Attachment } from "@/generated/prisma/client";
+import type { Timeline as TimelineRow, TimelineStage, Attachment } from "@prisma/client";
 import { Linkify } from "@/components/linkify";
 import { truncateFilename } from "@/lib/format";
 

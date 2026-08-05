@@ -1,4 +1,4 @@
-import { CaseIssue, CaseResolution, CaseStatus } from "@/generated/prisma/client";
+import { CaseIssue, CaseResolution, CaseStatus } from "@prisma/client";
 
 export const issueLabels: Record<CaseIssue, string> = {
   DelayedShipment: "Delayed shipment",

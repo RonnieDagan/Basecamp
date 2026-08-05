@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { updateTaskStatus } from "./actions";
 import { statusLabels } from "@/lib/task-labels";
-import { TaskStatus } from "@/generated/prisma/client";
+import { TaskStatus } from "@prisma/client";
 
 export function StatusSelect({ id, status }: { id: string; status: TaskStatus }) {
   const formRef = useRef<HTMLFormElement>(null);

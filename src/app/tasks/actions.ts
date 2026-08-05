@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { Domain, Priority, TaskStatus } from "@/generated/prisma/client";
+import { Domain, Priority, TaskStatus } from "@prisma/client";
 
 export async function createTask(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();

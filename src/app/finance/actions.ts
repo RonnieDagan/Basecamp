@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { FinanceType } from "@/generated/prisma/client";
+import { FinanceType } from "@prisma/client";
 
 export async function createFinanceItem(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { Platform, PostType, PostStatus } from "@/generated/prisma/client";
+import { Platform, PostType, PostStatus } from "@prisma/client";
 import { uploadFile, deleteFile } from "@/lib/file-storage";
 
 export async function createPost(formData: FormData) {

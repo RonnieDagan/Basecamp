@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Post } from "@/generated/prisma/client";
+import type { Post } from "@prisma/client";
 import { platformLabels, typeLabels, statusLabels, platformColors } from "@/lib/content-labels";
 import { deletePost, updatePost } from "./actions";
 import { Linkify } from "@/components/linkify";

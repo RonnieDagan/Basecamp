@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "50mb",
     },
   },
-  outputFileTracingIncludes: {
-    "/*": ["./src/generated/prisma/**/*"],
-  },
 };
 
 export default nextConfig;

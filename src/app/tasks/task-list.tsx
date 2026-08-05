@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Task } from "@/generated/prisma/client";
+import type { Task } from "@prisma/client";
 import {
   domainLabels,
   domainColors,

@@ -1,4 +1,4 @@
-import { Platform, PostType, PostStatus } from "@/generated/prisma/client";
+import { Platform, PostType, PostStatus } from "@prisma/client";
 
 export const platformLabels: Record<Platform, string> = {
   Instagram: "Instagram",

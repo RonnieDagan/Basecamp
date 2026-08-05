@@ -1,4 +1,4 @@
-import { TechpackCategory, TechpackStatus } from "@/generated/prisma/client";
+import { TechpackCategory, TechpackStatus } from "@prisma/client";
 
 export const categoryLabels: Record<TechpackCategory, string> = {
   Pants: "Pants",

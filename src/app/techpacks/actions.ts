@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { TechpackCategory, TechpackStatus } from "@/generated/prisma/client";
+import { TechpackCategory, TechpackStatus } from "@prisma/client";
 import { uploadFile, deleteFile } from "@/lib/file-storage";
 
 export async function createTechpack(formData: FormData) {

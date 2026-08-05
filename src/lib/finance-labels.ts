@@ -1,4 +1,4 @@
-import { FinanceType } from "@/generated/prisma/client";
+import { FinanceType } from "@prisma/client";
 
 export const typeLabels: Record<FinanceType, string> = {
   CreditCard: "Credit card",
