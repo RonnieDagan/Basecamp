@@ -9,6 +9,7 @@ import {
   completeBatch,
 } from "./actions";
 import { AddItemForm } from "./add-item-form";
+import { CsvImportForm } from "./csv-import-form";
 
 export async function PackingBoard() {
   const [batch, catalog] = await Promise.all([
@@ -41,6 +42,7 @@ export async function PackingBoard() {
   if (batch.status === "Draft") {
     return (
       <div className="card">
+        <CsvImportForm />
         <AddItemForm batchId={batch.id} catalog={catalog} />
         {items.length === 0 ? (
           <div className="empty">No items added yet.</div>
