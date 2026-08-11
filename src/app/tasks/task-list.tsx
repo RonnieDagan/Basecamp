@@ -97,11 +97,10 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
                 <span className="task-priority" style={{ color: priorityColors[task.priority] }}>
                   {priorityLabels[task.priority]}
                 </span>
-                <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: "8px" }}>
+                <span className="row-title-wrap">
                   <span
+                    className="row-title"
                     style={{
-                      fontSize: "14px",
-                      flexShrink: 0,
                       textDecoration: task.status === "Done" ? "line-through" : "none",
                       color: task.status === "Done" ? "var(--text-dimmer)" : "var(--paper)",
                     }}

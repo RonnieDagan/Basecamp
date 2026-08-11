@@ -181,7 +181,7 @@ export function ContentBoard({ posts }: { posts: Post[] }) {
               <span className="tag tag-dim" style={{ width: "80px", textAlign: "center" }}>
                 {platformLabels[p.platform]}
               </span>
-              <span style={{ flex: 1, fontSize: "14px" }}>
+              <span className="row-title-wrap" style={{ fontSize: "14px" }}>
                 {typeLabels[p.type]}
                 {p.product ? ` · ${p.product}` : ""}
                 {p.notes ? ` — ${p.notes}` : ""}

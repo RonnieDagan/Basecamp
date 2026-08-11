@@ -25,8 +25,8 @@ export async function CaseList() {
               <span className={`tag ${tagClass}`} style={{ width: "90px", textAlign: "center" }}>
                 {statusLabels[c.status]}
               </span>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: "8px" }}>
-                <span style={{ fontSize: "14px", flexShrink: 0 }}>{c.customer}</span>
+              <span className="row-title-wrap">
+                <span className="row-title">{c.customer}</span>
                 {c.notes && (
                   <span className="row-preview" style={{ maxWidth: "none" }}>
                     {truncateText(c.notes)}

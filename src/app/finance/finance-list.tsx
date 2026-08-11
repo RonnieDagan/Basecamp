@@ -34,8 +34,8 @@ export async function FinanceList() {
               <span className="tag tag-dim" style={{ width: "130px", textAlign: "center" }}>
                 {typeLabels[f.type]}
               </span>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: "8px" }}>
-                <span style={{ fontSize: "14px", flexShrink: 0 }}>{f.name}</span>
+              <span className="row-title-wrap">
+                <span className="row-title">{f.name}</span>
                 {f.notes && (
                   <span className="row-preview" style={{ maxWidth: "none" }}>
                     {truncateText(f.notes)}

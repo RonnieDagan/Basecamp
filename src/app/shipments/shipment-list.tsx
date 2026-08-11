@@ -32,8 +32,8 @@ export async function ShipmentList() {
             >
               {s.flagged ? "Flagged" : "On track"}
             </span>
-            <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "baseline", gap: "8px" }}>
-              <span style={{ fontSize: "14px", flexShrink: 0 }}>{s.name}</span>
+            <span className="row-title-wrap">
+              <span className="row-title">{s.name}</span>
               {s.notes && (
                 <span className="row-preview" style={{ maxWidth: "none" }}>
                   {truncateText(s.notes)}

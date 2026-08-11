@@ -47,8 +47,10 @@ export function Timeline({ timeline }: { timeline: TimelineWithStages }) {
   return (
     <div className="card">
       <div className="section-head" style={{ marginBottom: 0 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "10px", minWidth: 0 }}>
-          <div style={{ fontWeight: 500, fontSize: "15px", flexShrink: 0 }}>{timeline.name}</div>
+        <div className="row-title-wrap">
+          <div className="row-title" style={{ fontWeight: 500, fontSize: "15px" }}>
+            {timeline.name}
+          </div>
           {timeline.notes && !detailsOpen && (
             <span className="row-preview" style={{ maxWidth: "none" }}>
               {timeline.notes.length > 80 ? `${timeline.notes.slice(0, 80)}…` : timeline.notes}
