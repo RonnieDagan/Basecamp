@@ -10,6 +10,7 @@ const ALL_TABS = [
   { href: "/timelines", label: "Timelines" },
   { href: "/shipments", label: "Shipments" },
   { href: "/techpacks", label: "Techpacks" },
+  { href: "/packing", label: "Packing List" },
   { href: "/cases", label: "Cases" },
   { href: "/content", label: "Content" },
   { href: "/finance", label: "Finance" },

@@ -15,6 +15,8 @@ import { ShipmentList } from "../shipments/shipment-list";
 import { TechpackForm } from "../techpacks/techpack-form";
 import { TechpackList } from "../techpacks/techpack-list";
 
+import { PackingBoard } from "../packing/packing-board";
+
 import { CaseForm } from "../cases/case-form";
 import { CaseList } from "../cases/case-list";
 
@@ -100,6 +102,15 @@ export default function DashboardPage() {
           <TechpackForm />
           <Suspense fallback={LOADING}>
             <TechpackList />
+          </Suspense>
+        </Section>
+
+        <Section>
+          <div className="section-head">
+            <h2>Packing List</h2>
+          </div>
+          <Suspense fallback={LOADING}>
+            <PackingBoard />
           </Suspense>
         </Section>
 
