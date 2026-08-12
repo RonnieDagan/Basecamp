@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
+import { ContentSubNav } from "./content-subnav";
 import { ContentForm } from "./content-form";
 import { ContentStats } from "./content-stats";
 import { ContentListLoader } from "./content-list-loader";
@@ -30,6 +31,7 @@ export default function ContentPage() {
     <div className="basecamp" style={{ minHeight: "100vh" }}>
       <AppNav />
       <main className="wrap content-fade" style={{ paddingTop: 0 }}>
+        <ContentSubNav />
         <ContentForm />
         <Suspense fallback={<StatsSkeleton />}>
           <ContentStats />

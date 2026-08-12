@@ -253,6 +253,77 @@ body {
   padding: 1px 5px;
   cursor: pointer;
 }
+.basecamp .video-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(28, 38, 32, 0.7);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  pointer-events: none;
+}
+.basecamp .lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 11, 0.94);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  cursor: pointer;
+  animation: fade-in 0.12s ease;
+}
+.basecamp .lightbox-media {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+.basecamp .lightbox-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(251, 249, 243, 0.12);
+  border: 1px solid var(--line-strong);
+  color: var(--paper);
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 201;
+}
+.basecamp .lightbox-close:hover {
+  background: rgba(251, 249, 243, 0.22);
+}
+.basecamp .paste-zone {
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.basecamp .paste-zone:focus {
+  outline: none;
+  border-color: var(--moss-light);
+  background: rgba(127, 160, 132, 0.08);
+}
+.basecamp .paste-zone.flash {
+  border-color: var(--moss-light);
+  background: rgba(127, 160, 132, 0.18);
+}
 .basecamp .section-head {
   display: flex;
   justify-content: space-between;

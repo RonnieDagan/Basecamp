@@ -23,6 +23,8 @@ import { CaseList } from "../cases/case-list";
 import { ContentForm } from "../content/content-form";
 import { ContentStats } from "../content/content-stats";
 import { ContentListLoader } from "../content/content-list-loader";
+import { FolderFormLoader } from "../content/inspo/folder-form-loader";
+import { FolderList } from "../content/inspo/folder-list";
 
 import { FinanceForm } from "../finance/finance-form";
 import { FinanceList } from "../finance/finance-list";
@@ -128,6 +130,15 @@ export default function DashboardPage() {
           </Suspense>
           <Suspense fallback={LOADING}>
             <ContentListLoader />
+          </Suspense>
+        </Section>
+
+        <Section>
+          <Suspense fallback={LOADING}>
+            <FolderFormLoader />
+          </Suspense>
+          <Suspense fallback={LOADING}>
+            <FolderList />
           </Suspense>
         </Section>
 

@@ -267,3 +267,32 @@ model PackingItem {
   remaining   Int
   createdAt   DateTime     @default(now())
 }
+
+model InspoFolder {
+  id          String      @id @default(cuid())
+  name        String
+  category    String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       InspoItem[]
+}
+
+enum InspoItemType {
+  Image
+  Video
+  Link
+}
+
+model InspoItem {
+  id        String        @id @default(cuid())
+  folderId  String
+  folder    InspoFolder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  type      InspoItemType
+  url       String
+  label     String?
+  filename  String?
+  mimeType  String?
+  size      Int?
+  createdAt DateTime      @default(now())
+}
