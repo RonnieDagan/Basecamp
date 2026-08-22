@@ -186,7 +186,7 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
 
   // Positional value per task row: its real order if it has one, otherwise a placeholder
   // that increments just past whatever real value came before it (nulls always sort last).
-  const rows: Row[] = [];
+  const taskRows: Row[] = [];
   let cursor = 0;
   for (const task of items) {
     const real = effectiveOrder(task.id, task.order);
@@ -198,11 +198,25 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
       cursor += 1;
       pos = cursor;
     }
-    rows.push({ kind: "task", task, order: pos });
+    taskRows.push({ kind: "task", task, order: pos });
   }
-  for (const divider of [...effectiveDividers].sort((a, b) => a.order - b.order)) {
-    const idx = Math.max(0, Math.min(rows.length, Math.round(divider.order)));
-    rows.splice(idx, 0, { kind: "divider", divider, order: divider.order });
+
+  // Merge dividers into the task list by comparing order values directly, rather than
+  // splicing by row index (which drifts once more than one divider is present, since
+  // each earlier splice grows the array the next divider's index is computed against).
+  const dividersSorted = [...effectiveDividers].sort((a, b) => a.order - b.order);
+  const rows: Row[] = [];
+  let taskCursorIdx = 0;
+  for (const divider of dividersSorted) {
+    while (taskCursorIdx < taskRows.length && taskRows[taskCursorIdx].order < divider.order) {
+      rows.push(taskRows[taskCursorIdx]);
+      taskCursorIdx++;
+    }
+    rows.push({ kind: "divider", divider, order: divider.order });
+  }
+  while (taskCursorIdx < taskRows.length) {
+    rows.push(taskRows[taskCursorIdx]);
+    taskCursorIdx++;
   }
 
   function moveDivider(index: number, direction: -1 | 1) {
