@@ -115,29 +115,31 @@ function DividerForm() {
 
 function DividerRow({
   divider,
-  canMoveUp,
-  canMoveDown,
-  onMoveUp,
-  onMoveDown,
+  dragging,
+  onDragHandlePointerDown,
+  onDragHandlePointerMove,
+  onDragHandlePointerUp,
+  onDragHandlePointerCancel,
   onDelete,
 }: {
   divider: TaskDivider;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
+  dragging: boolean;
+  onDragHandlePointerDown: (e: React.PointerEvent) => void;
+  onDragHandlePointerMove: (e: React.PointerEvent) => void;
+  onDragHandlePointerUp: (e: React.PointerEvent) => void;
+  onDragHandlePointerCancel: (e: React.PointerEvent) => void;
   onDelete: () => void;
 }) {
   return (
-    <div className="task-divider">
+    <div className={`task-divider${dragging ? " dragging" : ""}`}>
       <span className="task-divider-label">{divider.label}</span>
       <span className="task-divider-line" />
-      <button type="button" onClick={onMoveUp} disabled={!canMoveUp} aria-label="Move divider up">
-        ▲
-      </button>
-      <button type="button" onClick={onMoveDown} disabled={!canMoveDown} aria-label="Move divider down">
-        ▼
-      </button>
+      <DragHandle
+        onPointerDown={onDragHandlePointerDown}
+        onPointerMove={onDragHandlePointerMove}
+        onPointerUp={onDragHandlePointerUp}
+        onPointerCancel={onDragHandlePointerCancel}
+      />
       <button type="button" className="icon-del" onClick={onDelete} aria-label="Delete divider">
         ✕
       </button>
@@ -149,7 +151,8 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
   const [domainFilter, setDomainFilter] = useState("all");
   const [sortBy, setSortBy] = useState<SortKey>("due");
   const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
-  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [draggingKind, setDraggingKind] = useState<"task" | "divider" | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [, startOrderTransition] = useTransition();
 
@@ -219,20 +222,6 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
     taskCursorIdx++;
   }
 
-  function moveDivider(index: number, direction: -1 | 1) {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= rows.length) return;
-    const current = rows[index];
-    const target = rows[targetIndex];
-    if (current.kind !== "divider") return;
-
-    const beyondIndex = targetIndex + direction;
-    const beyond = beyondIndex >= 0 && beyondIndex < rows.length ? rows[beyondIndex].order : null;
-    const newOrder = beyond !== null ? (target.order + beyond) / 2 : target.order + direction;
-
-    persistDividerOrder(current.divider.id, newOrder);
-  }
-
   function persistDividerOrder(id: string, newOrder: number) {
     setOrderOverrides((prev) => ({ ...prev, [id]: newOrder }));
     startOrderTransition(async () => {
@@ -251,8 +240,8 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
     });
   }
 
-  function handleTaskPointerMove(e: React.PointerEvent) {
-    if (!draggingTaskId) return;
+  function handleRowPointerMove(e: React.PointerEvent) {
+    if (!draggingId) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const rowEl = el?.closest("[data-row-index]") as HTMLElement | null;
     if (!rowEl) return;
@@ -263,37 +252,75 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
     setDragOverIndex((prev) => (prev === gap ? prev : gap));
   }
 
-  function finalizeTaskDrop() {
-    if (draggingTaskId && dragOverIndex !== null) {
-      // Count non-dragged task rows before the drop gap to find where the
-      // dragged task lands within the task-only ordering (rows interleave
-      // dividers, so we can't use dragOverIndex directly as a task index).
-      let insertionIndex = 0;
-      for (let i = 0; i < dragOverIndex; i++) {
-        const r = rows[i];
-        if (r.kind === "task" && r.task.id !== draggingTaskId) insertionIndex++;
-      }
+  function isDraggedRow(r: Row) {
+    return (r.kind === "task" && r.task.id === draggingId) || (r.kind === "divider" && r.divider.id === draggingId);
+  }
 
-      const taskIds = items.map((t) => t.id).filter((id) => id !== draggingTaskId);
-      taskIds.splice(insertionIndex, 0, draggingTaskId);
-
-      // Renumber every visible task with a fresh sequential order. Persisting
-      // only the dragged task would leave its still-null siblings sorting
-      // after it regardless of intended position, since null always sorts last.
-      const updates = taskIds.map((id, idx) => ({ id, order: idx }));
-
-      setOrderOverrides((prev) => {
-        const next = { ...prev };
-        for (const u of updates) next[u.id] = u.order;
-        return next;
-      });
-      startOrderTransition(async () => {
-        const fd = new FormData();
-        fd.set("updates", JSON.stringify(updates));
-        await reorderTasks(fd);
-      });
+  function rowOrderAbove(gap: number): number | null {
+    for (let i = gap - 1; i >= 0; i--) {
+      if (!isDraggedRow(rows[i])) return rows[i].order;
     }
-    setDraggingTaskId(null);
+    return null;
+  }
+
+  function rowOrderBelow(gap: number): number | null {
+    for (let i = gap; i < rows.length; i++) {
+      if (!isDraggedRow(rows[i])) return rows[i].order;
+    }
+    return null;
+  }
+
+  function finalizeTaskDrop(taskId: string) {
+    // Count non-dragged task rows before the drop gap to find where the
+    // dragged task lands within the task-only ordering (rows interleave
+    // dividers, so we can't use dragOverIndex directly as a task index).
+    let insertionIndex = 0;
+    for (let i = 0; i < dragOverIndex!; i++) {
+      const r = rows[i];
+      if (r.kind === "task" && r.task.id !== taskId) insertionIndex++;
+    }
+
+    const taskIds = items.map((t) => t.id).filter((id) => id !== taskId);
+    taskIds.splice(insertionIndex, 0, taskId);
+
+    // Renumber every visible task with a fresh sequential order. Persisting
+    // only the dragged task would leave its still-null siblings sorting
+    // after it regardless of intended position, since null always sorts last.
+    const updates = taskIds.map((id, idx) => ({ id, order: idx }));
+
+    setOrderOverrides((prev) => {
+      const next = { ...prev };
+      for (const u of updates) next[u.id] = u.order;
+      return next;
+    });
+    startOrderTransition(async () => {
+      const fd = new FormData();
+      fd.set("updates", JSON.stringify(updates));
+      await reorderTasks(fd);
+    });
+  }
+
+  function finalizeDividerDrop(dividerId: string) {
+    const above = rowOrderAbove(dragOverIndex!);
+    const below = rowOrderBelow(dragOverIndex!);
+    const newOrder =
+      above !== null && below !== null
+        ? (above + below) / 2
+        : above !== null
+          ? above + 1
+          : below !== null
+            ? below - 1
+            : 0;
+    persistDividerOrder(dividerId, newOrder);
+  }
+
+  function finalizeDrop() {
+    if (draggingId && draggingKind && dragOverIndex !== null) {
+      if (draggingKind === "task") finalizeTaskDrop(draggingId);
+      else finalizeDividerDrop(draggingId);
+    }
+    setDraggingId(null);
+    setDraggingKind(null);
     setDragOverIndex(null);
   }
 
@@ -329,7 +356,7 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
       ) : (
         <>
           {rows.map((row, i) => {
-            const gapBefore = draggingTaskId && <GapIndicator key={`gap-${i}`} active={dragOverIndex === i} />;
+            const gapBefore = draggingId && <GapIndicator key={`gap-${i}`} active={dragOverIndex === i} />;
 
             if (row.kind === "divider") {
               return (
@@ -338,10 +365,16 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
                   <div data-row-index={i} style={{ display: "contents" }}>
                     <DividerRow
                       divider={row.divider}
-                      canMoveUp={i > 0}
-                      canMoveDown={i < rows.length - 1}
-                      onMoveUp={() => moveDivider(i, -1)}
-                      onMoveDown={() => moveDivider(i, 1)}
+                      dragging={draggingKind === "divider" && draggingId === row.divider.id}
+                      onDragHandlePointerDown={(e) => {
+                        e.preventDefault();
+                        (e.currentTarget as Element).setPointerCapture(e.pointerId);
+                        setDraggingId(row.divider.id);
+                        setDraggingKind("divider");
+                      }}
+                      onDragHandlePointerMove={handleRowPointerMove}
+                      onDragHandlePointerUp={finalizeDrop}
+                      onDragHandlePointerCancel={finalizeDrop}
                       onDelete={() => removeDivider(row.divider.id)}
                     />
                   </div>
@@ -355,7 +388,7 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
               <div key={task.id} style={{ display: "contents" }}>
                 {gapBefore}
                 <details
-                  className={`row-details${draggingTaskId === task.id ? " dragging" : ""}`}
+                  className={`row-details${draggingKind === "task" && draggingId === task.id ? " dragging" : ""}`}
                   data-row-index={i}
                 >
                   <summary>
@@ -364,11 +397,12 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
                         onPointerDown={(e) => {
                           e.preventDefault();
                           (e.currentTarget as Element).setPointerCapture(e.pointerId);
-                          setDraggingTaskId(task.id);
+                          setDraggingId(task.id);
+                          setDraggingKind("task");
                         }}
-                        onPointerMove={handleTaskPointerMove}
-                        onPointerUp={finalizeTaskDrop}
-                        onPointerCancel={finalizeTaskDrop}
+                        onPointerMove={handleRowPointerMove}
+                        onPointerUp={finalizeDrop}
+                        onPointerCancel={finalizeDrop}
                       />
                     )}
                     <div className="dot" style={{ background: color }} />
@@ -448,7 +482,7 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
               </div>
             );
           })}
-          {draggingTaskId && <GapIndicator active={dragOverIndex === rows.length} />}
+          {draggingId && <GapIndicator active={dragOverIndex === rows.length} />}
         </>
       )}
     </>

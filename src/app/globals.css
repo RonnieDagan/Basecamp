@@ -867,21 +867,8 @@ body {
 .basecamp .task-divider .icon-del {
   flex-shrink: 0;
 }
-.basecamp .task-divider button:not(.icon-del) {
-  background: none;
-  border: none;
-  color: var(--text-dimmer);
-  cursor: pointer;
-  font-size: 10px;
-  padding: 2px 4px;
-  flex-shrink: 0;
-}
-.basecamp .task-divider button:not(.icon-del):hover:not(:disabled) {
-  color: var(--paper);
-}
-.basecamp .task-divider button:not(.icon-del):disabled {
-  opacity: 0.3;
-  cursor: default;
+.basecamp .task-divider.dragging {
+  opacity: 0.35;
 }
 .basecamp .add-divider-row {
   display: flex;
@@ -942,7 +929,8 @@ body {
   border-radius: 50%;
   background: var(--text-dimmer);
 }
-.basecamp .row-details:hover .drag-handle span {
+.basecamp .row-details:hover .drag-handle span,
+.basecamp .task-divider:hover .drag-handle span {
   background: var(--text-dim);
 }
 .basecamp .row-details.dragging {
