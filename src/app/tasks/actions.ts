@@ -56,6 +56,26 @@ export async function deleteTask(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function reorderTasks(formData: FormData) {
+  const raw = String(formData.get("updates") ?? "[]");
+  let updates: Array<{ id: string; order: number }>;
+  try {
+    updates = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (!Array.isArray(updates) || updates.length === 0) return;
+
+  await prisma.$transaction(
+    updates
+      .filter((u) => u && typeof u.id === "string" && Number.isFinite(u.order))
+      .map((u) => prisma.task.update({ where: { id: u.id }, data: { order: u.order } }))
+  );
+
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}
+
 export async function createDivider(formData: FormData) {
   const label = String(formData.get("label") ?? "").trim();
   if (!label) return;

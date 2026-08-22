@@ -13,8 +13,10 @@ import {
 } from "@/lib/task-labels";
 import { StatusSelect } from "./status-select";
 import { DeleteTaskButton } from "./delete-task-button";
-import { updateTaskDescription, createDivider, updateDividerOrder, deleteDivider } from "./actions";
+import { updateTaskDescription, reorderTasks, createDivider, updateDividerOrder, deleteDivider } from "./actions";
 import { Linkify } from "@/components/linkify";
+
+const TASK_ORDER_SENTINEL = Number.MAX_SAFE_INTEGER;
 
 function truncateText(text: string, max = 80) {
   if (text.length <= max) return text;
@@ -33,8 +35,31 @@ function formatDate(date: Date | null) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-type SortKey = "due" | "priority" | "domain";
+type SortKey = "due" | "priority" | "domain" | "custom";
 type Row = { kind: "task"; task: Task; order: number } | { kind: "divider"; divider: TaskDivider; order: number };
+
+function DragHandle(props: {
+  onPointerDown: (e: React.PointerEvent) => void;
+  onPointerMove: (e: React.PointerEvent) => void;
+  onPointerUp: (e: React.PointerEvent) => void;
+  onPointerCancel: (e: React.PointerEvent) => void;
+}) {
+  return (
+    <span className="drag-handle" onClick={(e) => e.stopPropagation()} {...props}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <span key={i} />
+      ))}
+    </span>
+  );
+}
+
+function GapIndicator({ active }: { active: boolean }) {
+  return (
+    <div className="task-gap">
+      <div className={`task-gap-bar${active ? " active" : ""}`} />
+    </div>
+  );
+}
 
 function DividerForm() {
   const [open, setOpen] = useState(false);
@@ -124,7 +149,13 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
   const [domainFilter, setDomainFilter] = useState("all");
   const [sortBy, setSortBy] = useState<SortKey>("due");
   const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
-  const [, startDividerTransition] = useTransition();
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [, startOrderTransition] = useTransition();
+
+  function effectiveOrder(id: string, dbOrder: number | null): number | null {
+    return orderOverrides[id] !== undefined ? orderOverrides[id] : dbOrder;
+  }
 
   let items = domainFilter === "all" ? tasks : tasks.filter((t) => t.domain === domainFilter);
   items = [...items];
@@ -136,30 +167,42 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
     });
   } else if (sortBy === "priority") {
     items.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  } else {
+  } else if (sortBy === "domain") {
     items.sort((a, b) => domainLabels[a.domain].localeCompare(domainLabels[b.domain]));
+  } else {
+    items.sort((a, b) => {
+      const ao = effectiveOrder(a.id, a.order) ?? TASK_ORDER_SENTINEL;
+      const bo = effectiveOrder(b.id, b.order) ?? TASK_ORDER_SENTINEL;
+      return ao - bo;
+    });
   }
 
   const now = new Date();
 
-  const effectiveDividers = dividers.map((d) =>
-    orderOverrides[d.id] !== undefined ? { ...d, order: orderOverrides[d.id] } : d
-  );
+  const effectiveDividers = dividers.map((d) => ({
+    ...d,
+    order: effectiveOrder(d.id, d.order) ?? d.order,
+  }));
 
-  const rows: Row[] = items.map((task, i) => ({ kind: "task", task, order: i }));
+  // Positional value per task row: its real order if it has one, otherwise a placeholder
+  // that increments just past whatever real value came before it (nulls always sort last).
+  const rows: Row[] = [];
+  let cursor = 0;
+  for (const task of items) {
+    const real = effectiveOrder(task.id, task.order);
+    let pos: number;
+    if (real !== null) {
+      pos = real;
+      cursor = real;
+    } else {
+      cursor += 1;
+      pos = cursor;
+    }
+    rows.push({ kind: "task", task, order: pos });
+  }
   for (const divider of [...effectiveDividers].sort((a, b) => a.order - b.order)) {
     const idx = Math.max(0, Math.min(rows.length, Math.round(divider.order)));
     rows.splice(idx, 0, { kind: "divider", divider, order: divider.order });
-  }
-
-  function persistOrder(id: string, newOrder: number) {
-    setOrderOverrides((prev) => ({ ...prev, [id]: newOrder }));
-    startDividerTransition(async () => {
-      const fd = new FormData();
-      fd.set("id", id);
-      fd.set("order", String(newOrder));
-      await updateDividerOrder(fd);
-    });
   }
 
   function moveDivider(index: number, direction: -1 | 1) {
@@ -169,20 +212,75 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
     const target = rows[targetIndex];
     if (current.kind !== "divider") return;
 
-    // New order goes just past the neighbor we're swapping with, relative to whatever's beyond it.
     const beyondIndex = targetIndex + direction;
     const beyond = beyondIndex >= 0 && beyondIndex < rows.length ? rows[beyondIndex].order : null;
     const newOrder = beyond !== null ? (target.order + beyond) / 2 : target.order + direction;
 
-    persistOrder(current.divider.id, newOrder);
+    persistDividerOrder(current.divider.id, newOrder);
+  }
+
+  function persistDividerOrder(id: string, newOrder: number) {
+    setOrderOverrides((prev) => ({ ...prev, [id]: newOrder }));
+    startOrderTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      fd.set("order", String(newOrder));
+      await updateDividerOrder(fd);
+    });
   }
 
   function removeDivider(id: string) {
-    startDividerTransition(async () => {
+    startOrderTransition(async () => {
       const fd = new FormData();
       fd.set("id", id);
       await deleteDivider(fd);
     });
+  }
+
+  function handleTaskPointerMove(e: React.PointerEvent) {
+    if (!draggingTaskId) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const rowEl = el?.closest("[data-row-index]") as HTMLElement | null;
+    if (!rowEl) return;
+    const idx = Number(rowEl.dataset.rowIndex);
+    const rect = rowEl.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const gap = e.clientY < midpoint ? idx : idx + 1;
+    setDragOverIndex((prev) => (prev === gap ? prev : gap));
+  }
+
+  function finalizeTaskDrop() {
+    if (draggingTaskId && dragOverIndex !== null) {
+      // Count non-dragged task rows before the drop gap to find where the
+      // dragged task lands within the task-only ordering (rows interleave
+      // dividers, so we can't use dragOverIndex directly as a task index).
+      let insertionIndex = 0;
+      for (let i = 0; i < dragOverIndex; i++) {
+        const r = rows[i];
+        if (r.kind === "task" && r.task.id !== draggingTaskId) insertionIndex++;
+      }
+
+      const taskIds = items.map((t) => t.id).filter((id) => id !== draggingTaskId);
+      taskIds.splice(insertionIndex, 0, draggingTaskId);
+
+      // Renumber every visible task with a fresh sequential order. Persisting
+      // only the dragged task would leave its still-null siblings sorting
+      // after it regardless of intended position, since null always sorts last.
+      const updates = taskIds.map((id, idx) => ({ id, order: idx }));
+
+      setOrderOverrides((prev) => {
+        const next = { ...prev };
+        for (const u of updates) next[u.id] = u.order;
+        return next;
+      });
+      startOrderTransition(async () => {
+        const fd = new FormData();
+        fd.set("updates", JSON.stringify(updates));
+        await reorderTasks(fd);
+      });
+    }
+    setDraggingTaskId(null);
+    setDragOverIndex(null);
   }
 
   return (
@@ -200,113 +298,144 @@ export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDiv
           <option value="due">Sort by due date</option>
           <option value="priority">Sort by priority</option>
           <option value="domain">Sort by domain</option>
+          <option value="custom">Sort: Custom (drag to reorder)</option>
         </select>
       </div>
 
       <DividerForm />
 
+      {sortBy === "custom" && (
+        <div className="caption" style={{ marginBottom: "8px" }}>
+          Drag the ⠿ handle to reorder tasks. Custom order only applies in this sort mode.
+        </div>
+      )}
+
       {rows.length === 0 ? (
         <div className="empty">No tasks match this view.</div>
       ) : (
-        rows.map((row, i) => {
-          if (row.kind === "divider") {
-            return (
-              <DividerRow
-                key={row.divider.id}
-                divider={row.divider}
-                canMoveUp={i > 0}
-                canMoveDown={i < rows.length - 1}
-                onMoveUp={() => moveDivider(i, -1)}
-                onMoveDown={() => moveDivider(i, 1)}
-                onDelete={() => removeDivider(row.divider.id)}
-              />
-            );
-          }
-          const task = row.task;
-          const color = domainColors[task.domain];
-          const overdue = Boolean(task.dueDate && task.status !== "Done" && task.dueDate < now);
-          return (
-            <details className="row-details" key={task.id}>
-              <summary>
-                <div className="dot" style={{ background: color }} />
-                <span
-                  className="tag"
-                  style={{
-                    background: hexToRgba(color, 0.18),
-                    color,
-                    width: "120px",
-                    textAlign: "center",
-                  }}
-                >
-                  {domainLabels[task.domain]}
-                </span>
-                <span className="task-priority" style={{ color: priorityColors[task.priority] }}>
-                  {priorityLabels[task.priority]}
-                </span>
-                <span className="row-title-wrap">
-                  <span
-                    className="row-title"
-                    style={{
-                      textDecoration: task.status === "Done" ? "line-through" : "none",
-                      color: task.status === "Done" ? "var(--text-dimmer)" : "var(--paper)",
-                    }}
-                  >
-                    {task.title}
-                  </span>
-                  {task.description && (
-                    <span className="row-preview" style={{ maxWidth: "none" }}>
-                      {truncateText(task.description)}
-                    </span>
-                  )}
-                </span>
-                <span
-                  className="mono"
-                  style={{
-                    fontSize: "12px",
-                    color: overdue ? "var(--clay-light)" : "var(--text-dim)",
-                    width: "56px",
-                    textAlign: "right",
-                  }}
-                >
-                  {formatDate(task.dueDate)}
-                </span>
-                <div
-                  className="dot"
-                  title={statusLabels[task.status]}
-                  style={{ background: statusColors[task.status], marginRight: "-4px" }}
-                />
-                <span onClick={(e) => e.stopPropagation()}>
-                  <StatusSelect id={task.id} status={task.status} />
-                </span>
-                <span onClick={(e) => e.stopPropagation()}>
-                  <DeleteTaskButton id={task.id} />
-                </span>
-              </summary>
+        <>
+          {rows.map((row, i) => {
+            const gapBefore = draggingTaskId && <GapIndicator key={`gap-${i}`} active={dragOverIndex === i} />;
 
-              <div className="row-expanded">
-                <div className="field">
-                  <label>Description</label>
-                  <Linkify text={task.description} />
-                  <form
-                    action={updateTaskDescription}
-                    style={{ display: "flex", gap: "8px" }}
-                  >
-                    <input type="hidden" name="id" value={task.id} />
-                    <textarea
-                      name="description"
-                      rows={4}
-                      defaultValue={task.description ?? ""}
-                      placeholder="Additional detail, links, or context"
+            if (row.kind === "divider") {
+              return (
+                <div key={row.divider.id} style={{ display: "contents" }}>
+                  {gapBefore}
+                  <div data-row-index={i} style={{ display: "contents" }}>
+                    <DividerRow
+                      divider={row.divider}
+                      canMoveUp={i > 0}
+                      canMoveDown={i < rows.length - 1}
+                      onMoveUp={() => moveDivider(i, -1)}
+                      onMoveDown={() => moveDivider(i, 1)}
+                      onDelete={() => removeDivider(row.divider.id)}
                     />
-                    <button type="submit" className="btn small">
-                      Save
-                    </button>
-                  </form>
+                  </div>
                 </div>
+              );
+            }
+            const task = row.task;
+            const color = domainColors[task.domain];
+            const overdue = Boolean(task.dueDate && task.status !== "Done" && task.dueDate < now);
+            return (
+              <div key={task.id} style={{ display: "contents" }}>
+                {gapBefore}
+                <details
+                  className={`row-details${draggingTaskId === task.id ? " dragging" : ""}`}
+                  data-row-index={i}
+                >
+                  <summary>
+                    {sortBy === "custom" && (
+                      <DragHandle
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          (e.currentTarget as Element).setPointerCapture(e.pointerId);
+                          setDraggingTaskId(task.id);
+                        }}
+                        onPointerMove={handleTaskPointerMove}
+                        onPointerUp={finalizeTaskDrop}
+                        onPointerCancel={finalizeTaskDrop}
+                      />
+                    )}
+                    <div className="dot" style={{ background: color }} />
+                    <span
+                      className="tag"
+                      style={{
+                        background: hexToRgba(color, 0.18),
+                        color,
+                        width: "120px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {domainLabels[task.domain]}
+                    </span>
+                    <span className="task-priority" style={{ color: priorityColors[task.priority] }}>
+                      {priorityLabels[task.priority]}
+                    </span>
+                    <span className="row-title-wrap">
+                      <span
+                        className="row-title"
+                        style={{
+                          textDecoration: task.status === "Done" ? "line-through" : "none",
+                          color: task.status === "Done" ? "var(--text-dimmer)" : "var(--paper)",
+                        }}
+                      >
+                        {task.title}
+                      </span>
+                      {task.description && (
+                        <span className="row-preview" style={{ maxWidth: "none" }}>
+                          {truncateText(task.description)}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className="mono"
+                      style={{
+                        fontSize: "12px",
+                        color: overdue ? "var(--clay-light)" : "var(--text-dim)",
+                        width: "56px",
+                        textAlign: "right",
+                      }}
+                    >
+                      {formatDate(task.dueDate)}
+                    </span>
+                    <div
+                      className="dot"
+                      title={statusLabels[task.status]}
+                      style={{ background: statusColors[task.status], marginRight: "-4px" }}
+                    />
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <StatusSelect id={task.id} status={task.status} />
+                    </span>
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <DeleteTaskButton id={task.id} />
+                    </span>
+                  </summary>
+
+                  <div className="row-expanded">
+                    <div className="field">
+                      <label>Description</label>
+                      <Linkify text={task.description} />
+                      <form action={updateTaskDescription} style={{ display: "flex", gap: "8px" }}>
+                        <input type="hidden" name="id" value={task.id} />
+                        <textarea
+                          name="description"
+                          rows={4}
+                          defaultValue={task.description ?? ""}
+                          placeholder="Additional detail, links, or context"
+                        />
+                        <button type="submit" className="btn small">
+                          Save
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </details>
               </div>
-            </details>
-          );
-        })
+            );
+          })}
+          {draggingTaskId && <GapIndicator active={dragOverIndex === rows.length} />}
+        </>
       )}
     </>
   );

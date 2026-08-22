@@ -926,6 +926,42 @@ body {
   outline: none;
   border-color: var(--moss-light);
 }
+.basecamp .drag-handle {
+  display: grid;
+  grid-template-columns: repeat(2, 3px);
+  grid-template-rows: repeat(3, 3px);
+  gap: 2.5px;
+  padding: 6px 4px;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.basecamp .drag-handle span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-dimmer);
+}
+.basecamp .row-details:hover .drag-handle span {
+  background: var(--text-dim);
+}
+.basecamp .row-details.dragging {
+  opacity: 0.35;
+}
+.basecamp .task-gap {
+  padding: 3px 0;
+}
+.basecamp .task-gap-bar {
+  height: 0;
+  border-radius: 3px;
+  background: var(--moss-light);
+  opacity: 0;
+  transition: height 0.15s ease, opacity 0.15s ease;
+}
+.basecamp .task-gap-bar.active {
+  height: 8px;
+  opacity: 1;
+}
 .basecamp .trail {
   display: flex;
   align-items: center;
