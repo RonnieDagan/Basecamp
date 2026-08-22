@@ -11,7 +11,7 @@ export function AppNav() {
   });
 
   return (
-    <div className="basecamp">
+    <>
       <div className="wrap" style={{ paddingBottom: 0 }}>
         <div className="topbar">
           <div className="brand">
@@ -30,10 +30,15 @@ export function AppNav() {
             </form>
           </div>
         </div>
+      </div>
 
-        <NavTabs />
+      {/* Rendered as a sibling (not nested in the short topbar wrap above) so its sticky
+          containing block is the page's full-height wrapper, not just the topbar's box. */}
+      <NavTabs />
+
+      <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
         <div className="nav-hint">Drag a tab to reorder — the leftmost tab opens by default.</div>
       </div>
-    </div>
+    </>
   );
 }

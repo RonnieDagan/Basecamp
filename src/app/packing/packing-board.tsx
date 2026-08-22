@@ -1,15 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import {
-  startBatch,
-  startPacking,
-  removePackingItem,
-  setItemRemaining,
-  resetItem,
-  resetBatch,
-  completeBatch,
-} from "./actions";
+import { startBatch, startPacking, removePackingItem } from "./actions";
 import { AddItemForm } from "./add-item-form";
 import { CsvImportForm } from "./csv-import-form";
+import { PackingActiveView } from "./packing-active-view";
 
 export async function PackingBoard() {
   const [batch, catalog] = await Promise.all([
@@ -76,83 +69,5 @@ export async function PackingBoard() {
     );
   }
 
-  const totalNeeded = items.reduce((sum, i) => sum + i.needed, 0);
-  const totalPacked = items.reduce((sum, i) => sum + (i.needed - i.remaining), 0);
-  const pct = totalNeeded > 0 ? Math.round((totalPacked / totalNeeded) * 100) : 0;
-  const allDone = items.length > 0 && items.every((i) => i.remaining === 0);
-
-  return (
-    <div className="card">
-      <div className="section-head" style={{ marginBottom: "8px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 500 }}>
-          {totalPacked} / {totalNeeded} items packed
-        </div>
-        <form action={resetBatch}>
-          <input type="hidden" name="batchId" value={batch.id} />
-          <button type="submit" className="btn ghost small">
-            Reset all
-          </button>
-        </form>
-      </div>
-      <div className="progress-bar" style={{ marginBottom: "18px" }}>
-        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
-
-      <div>
-        {items.map((item) => {
-          const done = item.remaining === 0;
-          return (
-            <div className={`packing-row${done ? " done" : ""}`} key={item.id}>
-              <div style={{ flex: "1 1 100%", fontSize: "14px" }}>
-                {done ? "✓ " : ""}
-                {item.productName} <span style={{ color: "var(--text-dim)" }}>· {item.size}</span>{" "}
-                <span className="caption" style={{ marginTop: 0 }}>
-                  needed {item.needed}
-                </span>
-              </div>
-              <div style={{ flex: "1 1 100%", display: "flex", alignItems: "center", gap: "10px" }}>
-                <form action={setItemRemaining} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <input type="hidden" name="id" value={item.id} />
-                  <button
-                    type="submit"
-                    className="qty-btn"
-                    name="remaining"
-                    value={item.remaining - 1}
-                    disabled={item.remaining <= 0}
-                    aria-label="Decrement remaining"
-                  >
-                    −
-                  </button>
-                  <span className="packing-remaining">{item.remaining}</span>
-                  <button
-                    type="submit"
-                    className="qty-btn"
-                    name="remaining"
-                    value={item.remaining + 1}
-                    disabled={item.remaining >= item.needed}
-                    aria-label="Increment remaining"
-                  >
-                    +
-                  </button>
-                </form>
-                <form action={resetItem} style={{ marginLeft: "auto" }}>
-                  <input type="hidden" name="id" value={item.id} />
-                  <button type="submit" className="btn ghost small">
-                    Reset
-                  </button>
-                </form>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <form action={completeBatch} style={{ marginTop: "18px" }}>
-        <input type="hidden" name="batchId" value={batch.id} />
-        <button type="submit" className="btn" disabled={!allDone}>
-          Mark batch complete
-        </button>
-      </form>
-    </div>
-  );
+  return <PackingActiveView batchId={batch.id} items={items} />;
 }

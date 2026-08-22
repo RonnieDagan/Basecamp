@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { Task } from "@prisma/client";
+import { useState, useTransition } from "react";
+import type { Task, TaskDivider } from "@prisma/client";
 import {
   domainLabels,
   domainColors,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/task-labels";
 import { StatusSelect } from "./status-select";
 import { DeleteTaskButton } from "./delete-task-button";
-import { updateTaskDescription } from "./actions";
+import { updateTaskDescription, createDivider, updateDividerOrder, deleteDivider } from "./actions";
 import { Linkify } from "@/components/linkify";
 
 function truncateText(text: string, max = 80) {
@@ -34,10 +34,97 @@ function formatDate(date: Date | null) {
 }
 
 type SortKey = "due" | "priority" | "domain";
+type Row = { kind: "task"; task: Task; order: number } | { kind: "divider"; divider: TaskDivider; order: number };
 
-export function TaskList({ tasks }: { tasks: Task[] }) {
+function DividerForm() {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function submit() {
+    const label = value.trim();
+    if (!label) return;
+    setValue("");
+    setOpen(false);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("label", label);
+      await createDivider(fd);
+    });
+  }
+
+  if (open) {
+    return (
+      <div className="add-divider-row open">
+        <input
+          autoFocus
+          className="add-divider-input"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder="Divider label, e.g. Today"
+        />
+        <button type="button" className="btn small" onClick={submit} disabled={pending || !value.trim()}>
+          {pending ? "Adding…" : "Add"}
+        </button>
+        <button type="button" className="btn ghost small" onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="add-divider-row">
+      <span className="add-divider-line" />
+      <button type="button" className="add-divider-btn" onClick={() => setOpen(true)}>
+        + Add divider
+      </button>
+      <span className="add-divider-line" />
+    </div>
+  );
+}
+
+function DividerRow({
+  divider,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+}: {
+  divider: TaskDivider;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="task-divider">
+      <span className="task-divider-label">{divider.label}</span>
+      <span className="task-divider-line" />
+      <button type="button" onClick={onMoveUp} disabled={!canMoveUp} aria-label="Move divider up">
+        ▲
+      </button>
+      <button type="button" onClick={onMoveDown} disabled={!canMoveDown} aria-label="Move divider down">
+        ▼
+      </button>
+      <button type="button" className="icon-del" onClick={onDelete} aria-label="Delete divider">
+        ✕
+      </button>
+    </div>
+  );
+}
+
+export function TaskList({ tasks, dividers }: { tasks: Task[]; dividers: TaskDivider[] }) {
   const [domainFilter, setDomainFilter] = useState("all");
   const [sortBy, setSortBy] = useState<SortKey>("due");
+  const [orderOverrides, setOrderOverrides] = useState<Record<string, number>>({});
+  const [, startDividerTransition] = useTransition();
 
   let items = domainFilter === "all" ? tasks : tasks.filter((t) => t.domain === domainFilter);
   items = [...items];
@@ -54,6 +141,49 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
   }
 
   const now = new Date();
+
+  const effectiveDividers = dividers.map((d) =>
+    orderOverrides[d.id] !== undefined ? { ...d, order: orderOverrides[d.id] } : d
+  );
+
+  const rows: Row[] = items.map((task, i) => ({ kind: "task", task, order: i }));
+  for (const divider of [...effectiveDividers].sort((a, b) => a.order - b.order)) {
+    const idx = Math.max(0, Math.min(rows.length, Math.round(divider.order)));
+    rows.splice(idx, 0, { kind: "divider", divider, order: divider.order });
+  }
+
+  function persistOrder(id: string, newOrder: number) {
+    setOrderOverrides((prev) => ({ ...prev, [id]: newOrder }));
+    startDividerTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      fd.set("order", String(newOrder));
+      await updateDividerOrder(fd);
+    });
+  }
+
+  function moveDivider(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= rows.length) return;
+    const current = rows[index];
+    const target = rows[targetIndex];
+    if (current.kind !== "divider") return;
+
+    // New order goes just past the neighbor we're swapping with, relative to whatever's beyond it.
+    const beyondIndex = targetIndex + direction;
+    const beyond = beyondIndex >= 0 && beyondIndex < rows.length ? rows[beyondIndex].order : null;
+    const newOrder = beyond !== null ? (target.order + beyond) / 2 : target.order + direction;
+
+    persistOrder(current.divider.id, newOrder);
+  }
+
+  function removeDivider(id: string) {
+    startDividerTransition(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      await deleteDivider(fd);
+    });
+  }
 
   return (
     <>
@@ -73,10 +203,26 @@ export function TaskList({ tasks }: { tasks: Task[] }) {
         </select>
       </div>
 
-      {items.length === 0 ? (
+      <DividerForm />
+
+      {rows.length === 0 ? (
         <div className="empty">No tasks match this view.</div>
       ) : (
-        items.map((task) => {
+        rows.map((row, i) => {
+          if (row.kind === "divider") {
+            return (
+              <DividerRow
+                key={row.divider.id}
+                divider={row.divider}
+                canMoveUp={i > 0}
+                canMoveDown={i < rows.length - 1}
+                onMoveUp={() => moveDivider(i, -1)}
+                onMoveDown={() => moveDivider(i, 1)}
+                onDelete={() => removeDivider(row.divider.id)}
+              />
+            );
+          }
+          const task = row.task;
           const color = domainColors[task.domain];
           const overdue = Boolean(task.dueDate && task.status !== "Done" && task.dueDate < now);
           return (

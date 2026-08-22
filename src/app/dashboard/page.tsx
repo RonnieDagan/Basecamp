@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AppNav } from "@/components/app-nav";
 import { Scratchpad } from "@/components/scratchpad";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { DashboardStats } from "./dashboard-stats";
 
 import { TaskForm } from "../tasks/task-form";
@@ -54,10 +55,20 @@ function StatsSkeleton() {
   );
 }
 
-function Section({ children }: { children: React.ReactNode }) {
+function Section({
+  title,
+  storageKey,
+  children,
+}: {
+  title: string;
+  storageKey: string;
+  children: React.ReactNode;
+}) {
   return (
     <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "1px solid var(--line-strong)" }}>
-      {children}
+      <CollapsibleSection title={title} storageKey={storageKey}>
+        {children}
+      </CollapsibleSection>
     </div>
   );
 }
@@ -74,40 +85,42 @@ export default function DashboardPage() {
         </Suspense>
 
         <div style={{ marginTop: "20px" }}>
-          <Suspense fallback={<div className="empty">Loading…</div>}>
-            <Scratchpad />
-          </Suspense>
+          <CollapsibleSection title="Scratchpad" storageKey="scratchpad">
+            <Suspense fallback={<div className="empty">Loading…</div>}>
+              <Scratchpad />
+            </Suspense>
+          </CollapsibleSection>
         </div>
 
-        <Section>
+        <Section title="Tasks" storageKey="tasks">
           <TaskForm />
           <Suspense fallback={LOADING}>
             <TaskListLoader />
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Timelines" storageKey="timelines">
           <TimelineForm />
           <Suspense fallback={LOADING}>
-            <TimelineList />
+            <TimelineList limit={2} />
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Shipments" storageKey="shipments">
           <ShipmentForm />
           <Suspense fallback={LOADING}>
             <ShipmentList />
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Techpacks" storageKey="techpacks">
           <TechpackForm />
           <Suspense fallback={LOADING}>
             <TechpackList />
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Packing List" storageKey="packing">
           <div className="section-head">
             <h2>Packing List</h2>
           </div>
@@ -116,14 +129,14 @@ export default function DashboardPage() {
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Cases" storageKey="cases">
           <CaseForm />
           <Suspense fallback={LOADING}>
             <CaseList />
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Content" storageKey="content">
           <ContentForm />
           <Suspense fallback={<StatsSkeleton />}>
             <ContentStats />
@@ -133,7 +146,7 @@ export default function DashboardPage() {
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Ideas & Photo Inspo" storageKey="inspo">
           <Suspense fallback={LOADING}>
             <FolderFormLoader />
           </Suspense>
@@ -142,7 +155,7 @@ export default function DashboardPage() {
           </Suspense>
         </Section>
 
-        <Section>
+        <Section title="Finance" storageKey="finance">
           <FinanceForm />
           <Suspense fallback={LOADING}>
             <FinanceList />

@@ -56,6 +56,13 @@ model Task {
   updatedAt   DateTime   @updatedAt
 }
 
+model TaskDivider {
+  id        String   @id @default(cuid())
+  label     String
+  order     Float
+  createdAt DateTime @default(now())
+}
+
 model Shipment {
   id        String    @id @default(cuid())
   name      String

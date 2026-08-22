@@ -55,3 +55,31 @@ export async function deleteTask(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
 }
+
+export async function createDivider(formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  if (!label) return;
+
+  await prisma.taskDivider.create({ data: { label, order: Date.now() } });
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}
+
+export async function updateDividerOrder(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const order = Number(formData.get("order") ?? NaN);
+  if (!id || !Number.isFinite(order)) return;
+
+  await prisma.taskDivider.update({ where: { id }, data: { order } });
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteDivider(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await prisma.taskDivider.delete({ where: { id } });
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}

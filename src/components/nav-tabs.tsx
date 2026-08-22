@@ -74,35 +74,37 @@ export function NavTabs() {
   const tabsByHref = new Map(ALL_TABS.map((t) => [t.href, t]));
 
   return (
-    <nav>
-      {order.map((href) => {
-        const tab = tabsByHref.get(href);
-        if (!tab) return null;
-        const active = pathname === tab.href;
-        const classes = [active ? "active" : "", dragOverHref === tab.href ? "drag-over" : ""]
-          .filter(Boolean)
-          .join(" ");
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={classes || undefined}
-            draggable
-            onDragStart={() => setDraggedHref(tab.href)}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOverHref(tab.href);
-            }}
-            onDragLeave={() => setDragOverHref((h) => (h === tab.href ? null : h))}
-            onDrop={(e) => {
-              e.preventDefault();
-              handleDrop(tab.href);
-            }}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
+    <nav className="nav-sticky">
+      <div className="nav-tabs-inner">
+        {order.map((href) => {
+          const tab = tabsByHref.get(href);
+          if (!tab) return null;
+          const active = pathname === tab.href;
+          const classes = [active ? "active" : "", dragOverHref === tab.href ? "drag-over" : ""]
+            .filter(Boolean)
+            .join(" ");
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={classes || undefined}
+              draggable
+              onDragStart={() => setDraggedHref(tab.href)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverHref(tab.href);
+              }}
+              onDragLeave={() => setDragOverHref((h) => (h === tab.href ? null : h))}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(tab.href);
+              }}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

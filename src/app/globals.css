@@ -102,10 +102,19 @@ body {
   font-size: 13px;
 }
 .basecamp nav {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--ink);
+}
+.basecamp .nav-tabs-inner {
   display: flex;
   gap: 4px;
-  margin-bottom: 10px;
   flex-wrap: wrap;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 10px 24px;
 }
 .basecamp nav a {
   background: transparent;
@@ -830,6 +839,92 @@ body {
   max-width: 220px;
   min-width: 0;
   flex-shrink: 1;
+}
+.basecamp .task-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-radius: 6px;
+}
+.basecamp .task-divider:hover {
+  background: rgba(251, 249, 243, 0.03);
+}
+.basecamp .task-divider-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.basecamp .task-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--line-strong);
+}
+.basecamp .task-divider .icon-del {
+  flex-shrink: 0;
+}
+.basecamp .task-divider button:not(.icon-del) {
+  background: none;
+  border: none;
+  color: var(--text-dimmer);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+.basecamp .task-divider button:not(.icon-del):hover:not(:disabled) {
+  color: var(--paper);
+}
+.basecamp .task-divider button:not(.icon-del):disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.basecamp .add-divider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 16px;
+  min-height: 28px;
+}
+.basecamp .add-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.basecamp .add-divider-btn {
+  background: var(--ink-2);
+  border: 1px dashed var(--line-strong);
+  color: var(--text-dim);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.basecamp .add-divider-btn:hover {
+  color: var(--paper);
+  border-color: var(--moss-light);
+}
+.basecamp .add-divider-input {
+  flex: 1;
+  max-width: 260px;
+  background: var(--ink);
+  border: 1px solid var(--line-strong);
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+}
+.basecamp .add-divider-input:focus {
+  outline: none;
+  border-color: var(--moss-light);
 }
 .basecamp .trail {
   display: flex;
