@@ -1101,3 +1101,82 @@ body {
     overflow-wrap: break-word;
   }
 }
+
+.basecamp .scratchpad-textarea {
+  background: var(--ink);
+  border: 1px solid var(--line-strong);
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  width: 100%;
+  resize: vertical;
+}
+.basecamp .scratchpad-textarea:focus {
+  outline: none;
+  border-color: var(--moss-light);
+}
+.basecamp .md-toolbar {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 10px));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--ink-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  z-index: 50;
+  animation: md-toolbar-in 0.1s ease-out;
+}
+@keyframes md-toolbar-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 10px));
+  }
+}
+.basecamp .md-toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--line-strong);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+.basecamp .md-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.basecamp .md-btn:hover {
+  background: var(--line);
+  color: var(--paper);
+}
+.basecamp .md-toolbar-input {
+  background: var(--ink);
+  border: 1px solid var(--line-strong);
+  color: var(--paper);
+  border-radius: 5px;
+  padding: 6px 8px;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 12px;
+  width: 200px;
+}
+.basecamp .md-toolbar-input:focus {
+  outline: none;
+  border-color: var(--moss-light);
+}
