@@ -1102,7 +1102,7 @@ body {
   }
 }
 
-.basecamp .scratchpad-textarea {
+.basecamp .scratchpad-editable {
   background: var(--ink);
   border: 1px solid var(--line-strong);
   color: var(--paper);
@@ -1110,13 +1110,42 @@ body {
   padding: 10px 12px;
   font-family: var(--font-sans), sans-serif;
   font-size: 13px;
-  line-height: 1.5;
-  width: 100%;
-  resize: vertical;
+  line-height: 1.6;
+  min-height: 160px;
+  max-height: 420px;
+  overflow-y: auto;
 }
-.basecamp .scratchpad-textarea:focus {
+.basecamp .scratchpad-editable:focus {
   outline: none;
   border-color: var(--moss-light);
+}
+.basecamp .scratchpad-editable:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-dimmer);
+}
+.basecamp .scratchpad-editable p,
+.basecamp .scratchpad-editable div {
+  margin: 0 0 4px;
+}
+.basecamp .scratchpad-editable h2 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 6px 0 4px;
+}
+.basecamp .scratchpad-editable h3 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 6px 0 4px;
+}
+.basecamp .scratchpad-editable ul {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+.basecamp .scratchpad-editable a {
+  color: var(--moss-light);
+  text-decoration: underline;
 }
 .basecamp .md-toolbar {
   position: fixed;
@@ -1164,6 +1193,10 @@ body {
 }
 .basecamp .md-btn:hover {
   background: var(--line);
+  color: var(--paper);
+}
+.basecamp .md-btn.active {
+  background: var(--moss);
   color: var(--paper);
 }
 .basecamp .md-toolbar-input {

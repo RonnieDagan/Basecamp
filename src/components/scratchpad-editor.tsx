@@ -3,104 +3,10 @@
 import { useRef, useState } from "react";
 import { saveScratchpad } from "./scratchpad-actions";
 
-// Properties that must be mirrored onto an offscreen div so its text wraps
-// identically to the textarea, letting us measure where a character lands.
-const MIRROR_PROPERTIES = [
-  "direction",
-  "box-sizing",
-  "width",
-  "overflow-x",
-  "overflow-y",
-  "border-top-width",
-  "border-right-width",
-  "border-bottom-width",
-  "border-left-width",
-  "border-style",
-  "padding-top",
-  "padding-right",
-  "padding-bottom",
-  "padding-left",
-  "font-style",
-  "font-variant",
-  "font-weight",
-  "font-stretch",
-  "font-size",
-  "line-height",
-  "font-family",
-  "text-align",
-  "text-transform",
-  "text-indent",
-  "letter-spacing",
-  "word-spacing",
-  "tab-size",
-];
-
-function getCaretCoordinates(textarea: HTMLTextAreaElement, position: number) {
-  const mirror = document.createElement("div");
-  const computed = window.getComputedStyle(textarea);
-  mirror.style.position = "absolute";
-  mirror.style.visibility = "hidden";
-  mirror.style.whiteSpace = "pre-wrap";
-  mirror.style.wordWrap = "break-word";
-  mirror.style.top = "0px";
-  mirror.style.left = "-9999px";
-  for (const prop of MIRROR_PROPERTIES) {
-    mirror.style.setProperty(prop, computed.getPropertyValue(prop));
-  }
-  document.body.appendChild(mirror);
-
-  mirror.textContent = textarea.value.slice(0, position);
-  const marker = document.createElement("span");
-  marker.textContent = textarea.value.slice(position) || ".";
-  mirror.appendChild(marker);
-
-  const top = marker.offsetTop;
-  const left = marker.offsetLeft;
-  document.body.removeChild(mirror);
-  return { top, left };
-}
-
-function wrapSelection(value: string, start: number, end: number, marker: string) {
-  const before = value.slice(Math.max(0, start - marker.length), start);
-  const after = value.slice(end, end + marker.length);
-  if (before === marker && after === marker) {
-    return {
-      value: value.slice(0, start - marker.length) + value.slice(start, end) + value.slice(end + marker.length),
-      start: start - marker.length,
-      end: end - marker.length,
-    };
-  }
-  return {
-    value: value.slice(0, start) + marker + value.slice(start, end) + marker + value.slice(end),
-    start: start + marker.length,
-    end: end + marker.length,
-  };
-}
-
-function toggleLinePrefix(value: string, start: number, end: number, prefix: string) {
-  const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-  const nextBreak = value.indexOf("\n", end);
-  const lineEnd = nextBreak === -1 ? value.length : nextBreak;
-  const block = value.slice(lineStart, lineEnd);
-  const lines = block.split("\n");
-  const allPrefixed = lines.every((l) => l.startsWith(prefix));
-  const newLines = lines.map((l) => (allPrefixed ? l.slice(prefix.length) : prefix + l));
-  const newBlock = newLines.join("\n");
-  return {
-    value: value.slice(0, lineStart) + newBlock + value.slice(lineEnd),
-    start: lineStart,
-    end: lineStart + newBlock.length,
-  };
-}
-
-function insertLink(value: string, start: number, end: number, url: string) {
-  const selected = value.slice(start, end) || "link text";
-  const inserted = `[${selected}](${url})`;
-  const caret = start + inserted.length;
-  return { value: value.slice(0, start) + inserted + value.slice(end), start: caret, end: caret };
-}
-
 type ToolbarState = { visible: boolean; top: number; left: number; mode: "format" | "link" };
+type ActiveStates = { bold: boolean; italic: boolean; strike: boolean; h2: boolean; h3: boolean; ul: boolean };
+
+const NO_ACTIVE: ActiveStates = { bold: false, italic: false, strike: false, h2: false, h3: false, ul: false };
 
 const noPropagateMouseDown = (e: React.MouseEvent) => e.preventDefault();
 
@@ -111,69 +17,73 @@ export function ScratchpadEditor({
   initialContent: string;
   savedLabel: string | null;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editableRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const savedSelection = useRef<{ start: number; end: number } | null>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const savedRange = useRef<Range | null>(null);
   const [toolbar, setToolbar] = useState<ToolbarState>({ visible: false, top: 0, left: 0, mode: "format" });
   const [linkUrl, setLinkUrl] = useState("");
+  const [active, setActive] = useState<ActiveStates>(NO_ACTIVE);
 
   function updateToolbarFromSelection() {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const { selectionStart: start, selectionEnd: end } = ta;
-    if (start === end) {
+    const editable = editableRef.current;
+    const sel = window.getSelection();
+    if (!editable || !sel || sel.rangeCount === 0 || sel.isCollapsed) {
       setToolbar((t) => (t.visible ? { ...t, visible: false } : t));
       return;
     }
-    const coords = getCaretCoordinates(ta, start);
-    const rect = ta.getBoundingClientRect();
-    setToolbar({
-      visible: true,
-      top: rect.top + coords.top - ta.scrollTop,
-      left: rect.left + coords.left - ta.scrollLeft,
-      mode: "format",
+    const range = sel.getRangeAt(0);
+    if (!editable.contains(range.commonAncestorContainer)) {
+      setToolbar((t) => (t.visible ? { ...t, visible: false } : t));
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+
+    const formatBlock = document.queryCommandValue("formatBlock").toLowerCase();
+    setActive({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      strike: document.queryCommandState("strikeThrough"),
+      h2: formatBlock === "h2",
+      h3: formatBlock === "h3",
+      ul: document.queryCommandState("insertUnorderedList"),
     });
+    setToolbar({ visible: true, top: rect.top, left: rect.left + rect.width / 2, mode: "format" });
   }
 
-  function commit(ta: HTMLTextAreaElement, result: { value: string; start: number; end: number }) {
-    ta.value = result.value;
-    ta.selectionStart = result.start;
-    ta.selectionEnd = result.end;
-    ta.focus();
-    requestAnimationFrame(updateToolbarFromSelection);
+  function exec(command: string, value?: string) {
+    editableRef.current?.focus();
+    document.execCommand(command, false, value);
+    updateToolbarFromSelection();
   }
 
-  function applyWrap(marker: string) {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    commit(ta, wrapSelection(ta.value, ta.selectionStart, ta.selectionEnd, marker));
-  }
-
-  function applyLinePrefix(prefix: string) {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    commit(ta, toggleLinePrefix(ta.value, ta.selectionStart, ta.selectionEnd, prefix));
+  function toggleHeading(tag: "H2" | "H3") {
+    const current = document.queryCommandValue("formatBlock").toLowerCase();
+    exec("formatBlock", current === tag.toLowerCase() ? "P" : tag);
   }
 
   function openLinkInput() {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    savedSelection.current = { start: ta.selectionStart, end: ta.selectionEnd };
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
     setLinkUrl("");
     setToolbar((t) => ({ ...t, mode: "link" }));
   }
 
   function confirmLink() {
-    const ta = textareaRef.current;
-    const sel = savedSelection.current;
     const url = linkUrl.trim();
-    if (ta && sel && url) {
-      commit(ta, insertLink(ta.value, sel.start, sel.end, url));
+    const editable = editableRef.current;
+    if (url && editable && savedRange.current) {
+      editable.focus();
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(savedRange.current);
+      document.execCommand("createLink", false, url);
     }
     setToolbar((t) => ({ ...t, visible: false, mode: "format" }));
   }
 
-  function handleTextareaBlur(e: React.FocusEvent<HTMLTextAreaElement>) {
+  function handleEditableBlur(e: React.FocusEvent<HTMLDivElement>) {
     const next = e.relatedTarget as Node | null;
     if (next && toolbarRef.current?.contains(next)) return;
     setToolbar((t) => ({ ...t, visible: false }));
@@ -185,18 +95,29 @@ export function ScratchpadEditor({
     setToolbar((t) => ({ ...t, visible: false }));
   }
 
+  function handleSubmit() {
+    if (hiddenInputRef.current && editableRef.current) {
+      hiddenInputRef.current.value = editableRef.current.innerHTML;
+    }
+  }
+
   return (
-    <form action={saveScratchpad} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <textarea
-        ref={textareaRef}
-        name="content"
-        className="scratchpad-textarea"
-        rows={8}
-        defaultValue={initialContent}
-        placeholder="Quick notes, ideas, things to remember — highlight text to format it."
-        onSelect={updateToolbarFromSelection}
+    <form
+      action={saveScratchpad}
+      onSubmit={handleSubmit}
+      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+    >
+      <input ref={hiddenInputRef} type="hidden" name="content" defaultValue={initialContent} />
+      <div
+        ref={editableRef}
+        className="scratchpad-editable"
+        contentEditable
+        suppressContentEditableWarning
+        data-placeholder="Quick notes, ideas, things to remember — highlight text to format it."
+        dangerouslySetInnerHTML={{ __html: initialContent }}
+        onMouseUp={updateToolbarFromSelection}
         onKeyUp={updateToolbarFromSelection}
-        onBlur={handleTextareaBlur}
+        onBlur={handleEditableBlur}
       />
 
       {toolbar.visible && (
@@ -210,29 +131,51 @@ export function ScratchpadEditor({
         >
           {toolbar.mode === "format" ? (
             <>
-              <button type="button" className="md-btn" style={{ fontWeight: 700 }} onClick={() => applyWrap("**")}>
+              <button
+                type="button"
+                className={`md-btn${active.bold ? " active" : ""}`}
+                style={{ fontWeight: 700 }}
+                onClick={() => exec("bold")}
+              >
                 B
               </button>
-              <button type="button" className="md-btn" style={{ fontStyle: "italic" }} onClick={() => applyWrap("_")}>
+              <button
+                type="button"
+                className={`md-btn${active.italic ? " active" : ""}`}
+                style={{ fontStyle: "italic" }}
+                onClick={() => exec("italic")}
+              >
                 I
               </button>
               <button
                 type="button"
-                className="md-btn"
+                className={`md-btn${active.strike ? " active" : ""}`}
                 style={{ textDecoration: "line-through" }}
-                onClick={() => applyWrap("~~")}
+                onClick={() => exec("strikeThrough")}
               >
                 S
               </button>
               <span className="md-toolbar-divider" />
-              <button type="button" className="md-btn" onClick={() => applyLinePrefix("# ")}>
+              <button
+                type="button"
+                className={`md-btn${active.h2 ? " active" : ""}`}
+                onClick={() => toggleHeading("H2")}
+              >
                 H1
               </button>
-              <button type="button" className="md-btn" onClick={() => applyLinePrefix("## ")}>
+              <button
+                type="button"
+                className={`md-btn${active.h3 ? " active" : ""}`}
+                onClick={() => toggleHeading("H3")}
+              >
                 H2
               </button>
               <span className="md-toolbar-divider" />
-              <button type="button" className="md-btn" onClick={() => applyLinePrefix("- ")}>
+              <button
+                type="button"
+                className={`md-btn${active.ul ? " active" : ""}`}
+                onClick={() => exec("insertUnorderedList")}
+              >
                 •
               </button>
               <button type="button" className="md-btn" onMouseDown={noPropagateMouseDown} onClick={openLinkInput}>
@@ -255,7 +198,7 @@ export function ScratchpadEditor({
                 if (e.key === "Escape") {
                   e.preventDefault();
                   setToolbar((t) => ({ ...t, mode: "format" }));
-                  textareaRef.current?.focus();
+                  editableRef.current?.focus();
                 }
               }}
             />
