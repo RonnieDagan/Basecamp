@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { createTimeline } from "./actions";
+import { Spinner } from "@/components/spinner";
 
 export function TimelineForm() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -59,7 +60,13 @@ export function TimelineForm() {
             <textarea name="notes" rows={2} placeholder="What this run/goal is about" />
           </div>
           <button type="submit" className="btn" disabled={pending}>
-            {pending ? "Saving…" : "Save timeline"}
+            {pending ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <Spinner /> Saving…
+              </span>
+            ) : (
+              "Save timeline"
+            )}
           </button>{" "}
           <button type="button" className="btn ghost" onClick={() => setOpen(false)}>
             Cancel

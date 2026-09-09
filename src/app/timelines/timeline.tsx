@@ -13,6 +13,7 @@ import {
 import type { Timeline as TimelineRow, TimelineStage, Attachment } from "@prisma/client";
 import { Linkify } from "@/components/linkify";
 import { truncateFilename } from "@/lib/format";
+import { Spinner } from "@/components/spinner";
 
 type StageWithAttachments = TimelineStage & { attachments: Attachment[] };
 type TimelineWithStages = TimelineRow & { stages: StageWithAttachments[] };
@@ -36,6 +37,7 @@ export function Timeline({ timeline }: { timeline: TimelineWithStages }) {
   const sortedStages = [...timeline.stages].sort((a, b) => a.order - b.order);
   const [selected, setSelected] = useState(() => pickDefaultStage(sortedStages));
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [lightboxAttachment, setLightboxAttachment] = useState<Attachment | null>(null);
   const statusFormRef = useRef<HTMLFormElement>(null);
   const notesFormRef = useRef<HTMLFormElement>(null);
   const uploadFormRef = useRef<HTMLFormElement>(null);
@@ -45,54 +47,61 @@ export function Timeline({ timeline }: { timeline: TimelineWithStages }) {
   const stage = sortedStages.find((s) => s.name === selected) ?? sortedStages[0];
 
   return (
-    <div className="card">
-      <div className="section-head" style={{ marginBottom: 0 }}>
-        <div className="row-title-wrap">
-          <div className="row-title" style={{ fontWeight: 500, fontSize: "15px" }}>
-            {timeline.name}
+    <details className="card" open>
+      <summary>
+        <div className="section-head" style={{ marginBottom: 0 }}>
+          <div className="row-title-wrap">
+            <div className="row-title" style={{ fontWeight: 500, fontSize: "15px" }}>
+              {timeline.name}
+            </div>
+            {timeline.notes && !detailsOpen && (
+              <span className="row-preview" style={{ maxWidth: "none" }}>
+                {timeline.notes.length > 80 ? `${timeline.notes.slice(0, 80)}…` : timeline.notes}
+              </span>
+            )}
           </div>
-          {timeline.notes && !detailsOpen && (
-            <span className="row-preview" style={{ maxWidth: "none" }}>
-              {timeline.notes.length > 80 ? `${timeline.notes.slice(0, 80)}…` : timeline.notes}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span className={`tag ${timeline.flagged ? "tag-clay" : "tag-moss"}`}>
+              {timeline.flagged ? "Flagged" : "On track"}
             </span>
-          )}
+            <span onClick={(e) => e.preventDefault()}>
+              <button
+                type="button"
+                className="btn ghost small"
+                onClick={() => setDetailsOpen((o) => !o)}
+              >
+                {detailsOpen ? "Less" : "More"}
+              </button>
+            </span>
+            <span className="details-chevron" aria-hidden="true">
+              ▾
+            </span>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span className={`tag ${timeline.flagged ? "tag-clay" : "tag-moss"}`}>
-            {timeline.flagged ? "Flagged" : "On track"}
-          </span>
-          <button
-            type="button"
-            className="btn ghost small"
-            onClick={() => setDetailsOpen((o) => !o)}
-          >
-            {detailsOpen ? "Less" : "More"}
-          </button>
-        </div>
-      </div>
 
-      <div className="trail">
-        <div className="line" />
-        <div className="stages">
-          {sortedStages.map((s) => {
-            let ptClass = "pt";
-            if (s.status === "Done") ptClass += " done";
-            if (s.status === "Current") ptClass += " now " + (timeline.flagged ? "flag" : "ok");
-            const isSelected = s.name === selected;
-            const stageClass =
-              "stage" +
-              (s.status === "Current" ? " current" : "") +
-              (isSelected ? " selected" : "") +
-              " clickable";
-            return (
-              <div key={s.id} className={stageClass} onClick={() => setSelected(s.name)}>
-                <div className={ptClass} />
-                <span>{s.name}</span>
-              </div>
-            );
-          })}
+        <div className="trail" onClick={(e) => e.preventDefault()}>
+          <div className="line" />
+          <div className="stages">
+            {sortedStages.map((s) => {
+              let ptClass = "pt";
+              if (s.status === "Done") ptClass += " done";
+              if (s.status === "Current") ptClass += " now " + (timeline.flagged ? "flag" : "ok");
+              const isSelected = s.name === selected;
+              const stageClass =
+                "stage" +
+                (s.status === "Current" ? " current" : "") +
+                (isSelected ? " selected" : "") +
+                " clickable";
+              return (
+                <div key={s.id} className={stageClass} onClick={() => setSelected(s.name)}>
+                  <div className={ptClass} />
+                  <span>{s.name}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </summary>
 
       {detailsOpen && (
         <div className="stage-panel" style={{ marginBottom: "10px" }}>
@@ -183,7 +192,13 @@ export function Timeline({ timeline }: { timeline: TimelineWithStages }) {
               <input type="hidden" name="stageId" value={stage.id} />
               <input type="file" name="file" multiple required />
               <button type="submit" className="btn small" disabled={uploading}>
-                {uploading ? "Uploading…" : "Add"}
+                {uploading ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <Spinner /> Uploading…
+                  </span>
+                ) : (
+                  "Add"
+                )}
               </button>
             </form>
             <div className="caption">
@@ -196,27 +211,40 @@ export function Timeline({ timeline }: { timeline: TimelineWithStages }) {
               ) : (
                 stage.attachments.map((a) => {
                   const isImage = a.mimeType?.startsWith("image/");
+                  const chipContent = isImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={a.blobUrl}
+                      alt={a.filename}
+                      style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px" }}
+                    />
+                  ) : (
+                    <span aria-hidden style={{ fontSize: "18px" }}>📄</span>
+                  );
+                  const chipStyle: React.CSSProperties = {
+                    color: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  };
                   return (
                     <span className="file-chip" key={a.id}>
-                      <a
-                        href={a.blobUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ color: "inherit", display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        {isImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={a.blobUrl}
-                            alt={a.filename}
-                            style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px" }}
-                          />
-                        ) : (
-                          <span aria-hidden style={{ fontSize: "18px" }}>📄</span>
-                        )}
-                        {truncateFilename(a.filename)}
-                        {a.size ? ` (${formatFileSize(a.size)})` : ""}
-                      </a>
+                      {isImage ? (
+                        <span
+                          style={{ ...chipStyle, cursor: "pointer" }}
+                          onClick={() => setLightboxAttachment(a)}
+                        >
+                          {chipContent}
+                          {truncateFilename(a.filename)}
+                          {a.size ? ` (${formatFileSize(a.size)})` : ""}
+                        </span>
+                      ) : (
+                        <a href={a.blobUrl} target="_blank" rel="noreferrer" style={chipStyle}>
+                          {chipContent}
+                          {truncateFilename(a.filename)}
+                          {a.size ? ` (${formatFileSize(a.size)})` : ""}
+                        </a>
+                      )}
                       <form action={deleteAttachment} style={{ display: "inline" }}>
                         <input type="hidden" name="id" value={a.id} />
                         <button type="submit" className="icon-del" style={{ padding: "0 2px" }}>
@@ -231,6 +259,21 @@ export function Timeline({ timeline }: { timeline: TimelineWithStages }) {
           </div>
         </div>
       )}
-    </div>
+
+      {lightboxAttachment && (
+        <div className="lightbox-overlay" onClick={() => setLightboxAttachment(null)}>
+          <button
+            type="button"
+            className="lightbox-close"
+            onClick={() => setLightboxAttachment(null)}
+            aria-label="Close preview"
+          >
+            ✕
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightboxAttachment.blobUrl} alt={lightboxAttachment.filename} className="lightbox-media" />
+        </div>
+      )}
+    </details>
   );
 }
