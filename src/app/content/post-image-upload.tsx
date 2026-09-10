@@ -2,6 +2,7 @@
 
 import { useRef, useTransition } from "react";
 import { uploadPostImage, deletePostImage } from "./actions";
+import { ImageThumb } from "@/components/image-thumb";
 
 export function PostImageUpload({
   postId,
@@ -19,8 +20,7 @@ export function PostImageUpload({
     <div>
       {imageUrl && (
         <div style={{ position: "relative", marginBottom: "8px" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <ImageThumb
             src={imageUrl}
             alt={imageFilename ?? "Post image"}
             style={{
@@ -30,6 +30,7 @@ export function PostImageUpload({
               borderRadius: "8px",
               background: "var(--ink)",
               border: "1px solid var(--line-strong)",
+              display: "block",
             }}
           />
           <form action={deletePostImage} style={{ position: "absolute", top: "8px", right: "8px" }}>

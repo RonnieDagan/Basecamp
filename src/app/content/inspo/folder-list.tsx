@@ -6,6 +6,7 @@ import { Gallery } from "./gallery";
 import { LinkSection } from "./link-section";
 import { Linkify } from "@/components/linkify";
 import { categoryColor } from "@/lib/category-color";
+import { ImageThumb } from "@/components/image-thumb";
 
 export async function FolderList() {
   const folders = await prisma.inspoFolder.findMany({
@@ -35,8 +36,7 @@ export async function FolderList() {
           <details className="card" key={folder.id}>
             <summary>
               {cover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={cover.url} alt="" className="techpack-thumb" />
+                <ImageThumb src={cover.url} alt="" className="techpack-thumb" />
               ) : (
                 <div className="techpack-thumb" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span className="caption" style={{ marginTop: 0 }}>No images yet</span>

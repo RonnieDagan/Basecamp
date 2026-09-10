@@ -6,6 +6,7 @@ import { platformLabels, typeLabels, statusLabels, platformColors } from "@/lib/
 import { deletePost, updatePost } from "./actions";
 import { Linkify } from "@/components/linkify";
 import { PostImageUpload } from "./post-image-upload";
+import { ImageThumb } from "@/components/image-thumb";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -171,8 +172,7 @@ export function ContentBoard({ posts }: { posts: Post[] }) {
             <summary>
               <span className="dot" style={{ background: platformColors[p.platform] }} />
               {p.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <ImageThumb
                   src={p.imageUrl}
                   alt=""
                   style={{ width: "28px", height: "28px", objectFit: "cover", borderRadius: "4px", flexShrink: 0 }}

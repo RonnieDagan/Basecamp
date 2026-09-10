@@ -4,6 +4,7 @@ import { categoryLabels, statusLabels } from "@/lib/techpack-labels";
 import { Linkify } from "@/components/linkify";
 import { truncateFilename } from "@/lib/format";
 import { TechpackImageUpload } from "./techpack-image-upload";
+import { ImageThumb } from "@/components/image-thumb";
 
 function formatFileSize(bytes: number | null) {
   if (!bytes) return "";
@@ -32,10 +33,7 @@ export async function TechpackList() {
         return (
           <details className="card" key={tp.id}>
             <summary>
-              {coverImage && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={coverImage.blobUrl} alt="" className="techpack-thumb" />
-              )}
+              {coverImage && <ImageThumb src={coverImage.blobUrl} alt="" className="techpack-thumb" />}
               <div style={{ fontWeight: 500, fontSize: "14px" }}>{tp.name}</div>
               <div style={{ fontSize: "12px", color: "var(--text-dim)", marginTop: "2px" }}>
                 {categoryLabels[tp.category]} · {tp.version}
@@ -56,11 +54,10 @@ export async function TechpackList() {
                     const isImage = img.mimeType?.startsWith("image/");
                     return (
                       <div className="techpack-gallery-item" key={img.id}>
-                        <a href={img.blobUrl} target="_blank" rel="noreferrer">
-                          {isImage ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={img.blobUrl} alt={img.filename} />
-                          ) : (
+                        {isImage ? (
+                          <ImageThumb src={img.blobUrl} alt={img.filename} />
+                        ) : (
+                          <a href={img.blobUrl} target="_blank" rel="noreferrer">
                             <div className="file-fallback">
                               <span aria-hidden style={{ fontSize: "28px" }}>
                                 📄
@@ -68,8 +65,8 @@ export async function TechpackList() {
                               <span>{truncateFilename(img.filename)}</span>
                               <span>{formatFileSize(img.size)}</span>
                             </div>
-                          )}
-                        </a>
+                          </a>
+                        )}
                         <form action={deleteTechpackImage}>
                           <input type="hidden" name="id" value={img.id} />
                           <button type="submit" className="remove-img">
