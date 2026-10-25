@@ -1147,6 +1147,26 @@ body {
   color: var(--moss-light);
   text-decoration: underline;
 }
+.basecamp .scratchpad-label-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--paper);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border-radius: 5px;
+  width: 100%;
+}
+.basecamp .scratchpad-label-input:hover {
+  border-color: var(--line);
+}
+.basecamp .scratchpad-label-input:focus {
+  outline: none;
+  background: var(--ink);
+  border-color: var(--moss-light);
+}
 .basecamp .md-toolbar {
   position: fixed;
   transform: translate(-50%, calc(-100% - 10px));

@@ -11,9 +11,11 @@ const NO_ACTIVE: ActiveStates = { bold: false, italic: false, strike: false, h2:
 const noPropagateMouseDown = (e: React.MouseEvent) => e.preventDefault();
 
 export function ScratchpadEditor({
+  id,
   initialContent,
   savedLabel,
 }: {
+  id: string;
   initialContent: string;
   savedLabel: string | null;
 }) {
@@ -107,6 +109,7 @@ export function ScratchpadEditor({
       onSubmit={handleSubmit}
       style={{ display: "flex", flexDirection: "column", gap: "8px" }}
     >
+      <input type="hidden" name="id" value={id} />
       <input ref={hiddenInputRef} type="hidden" name="content" defaultValue={initialContent} />
       <div
         ref={editableRef}
